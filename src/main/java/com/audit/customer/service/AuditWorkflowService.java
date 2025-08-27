@@ -27,6 +27,9 @@ public class AuditWorkflowService {
     @Autowired
     private RiskAssessmentResultRepository riskAssessmentResultRepository;
     
+    @Autowired
+    private AuditCompletionMessageService auditCompletionMessageService;
+    
     @Transactional
     public AuditResultSubmissionResponse processAuditResult(AuditResultSubmissionRequest request) {
         // 1. 验证审核流程是否存在且状态正确
@@ -76,7 +79,13 @@ public class AuditWorkflowService {
         // 5. 更新审核流程状态
         updateAuditLogStatus(auditLog, decision);
         
-        // 6. 构建响应
+        // 6. 如果是最终审核结果，发送消息到Kafka
+        if (decision.isCompleted()) {
+            String finalResult = determineFinalResult(request.getApproved(), decision.getMessage());
+            auditCompletionMessageService.sendAuditCompletionMessage(auditLog, finalResult);
+        }
+        
+        // 7. 构建响应
         return buildResponse(auditLog, decision);
     }
     
@@ -150,6 +159,19 @@ public class AuditWorkflowService {
                 decision.getNextStage(),
                 decision.isCompleted()
         );
+    }
+    
+    private String determineFinalResult(Boolean approved, String message) {
+        if (!approved) {
+            return "REJECTED";
+        }
+        
+        // 根据消息内容判断最终结果类型
+        if (message.contains("流程结束")) {
+            return "APPROVED";
+        }
+        
+        return "APPROVED";
     }
     
     private static class WorkflowDecision {
