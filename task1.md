@@ -149,3 +149,13 @@ response应该长这样：
         ]
     }
 }
+
+Task7:
+根据以下要求生成前端页面，要求用react next.js技术栈生成前端。要求对接C:\D\proj\audit\src\main\java\com\audit\customer\controller\CustomerQuestionnaireController.java
+里面定义的接口。实现用户提交信息和回显的前端。
+要求遵守frontend\demo\for_customer.html的页面风格和打分逻辑。
+
+Task8:
+根据以下要求生成前端页面，要求用react next.js技术栈生成前端。要求对接。暂时不考虑审核员登录。C:\D\proj\audit\src\main\java\com\audit\customer\controller\AuditorController.java
+里面定义的接口。实现审核员拉取任务和提交结果。
+要求遵守frontend\demo\for_auditor.html的页面风格和打分逻辑。

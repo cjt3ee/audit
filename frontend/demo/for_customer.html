@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>银行投资风险审核系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: white;
+            font-size: 16px;
+            transition: all 0.3s;
+            border-right: 1px solid #eee;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .tab:last-child {
+            border-right: none;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab:hover {
+            background: #f0f0f0;
+        }
+
+        .tab.active:hover {
+            background: #5a6fd8;
+        }
+
+        .content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .option-btn {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .option-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option-btn.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .risk-score {
+            background: linear-gradient(90deg, #4CAF50 0%, #FFC107 50%, #F44336 100%);
+            height: 20px;
+            border-radius: 10px;
+            position: relative;
+            margin: 15px 0;
+        }
+
+        .risk-indicator {
+            position: absolute;
+            top: -5px;
+            left: 65%;
+            width: 30px;
+            height: 30px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+        }
+
+        .risk-level {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .badge-conservative {
+            background: #e8f5e8;
+            color: #4CAF50;
+        }
+
+        .badge-moderate {
+            background: #fff3e0;
+            color: #FF9800;
+        }
+
+        .badge-aggressive {
+            background: #ffebee;
+            color: #F44336;
+        }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .portfolio-card {
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .portfolio-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .portfolio-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .allocation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .allocation-bar {
+            width: 100px;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .allocation-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s;
+        }
+
+        
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .required {
+            color: #F44336;
+        }
+
+        .info-section {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-section h4 {
+            color: #1976D2;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>银行投资风险审核系统</h1>
+        <p>为客户提供专业的投资风险评估和审核服务</p>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('risk-assessment')">客户风险评估</button>
+            <button class="tab" onclick="showTab('investment-advice')">投资建议</button>
+        
+        </div>
+
+        <!-- 客户风险评估 -->
+        <div id="risk-assessment" class="content">
+            <h2 class="section-title">客户风险评估</h2>
+            
+            <div class="info-section">
+                <h4>评估说明</h4>
+                <p>请如实填写以下信息，我们将根据您的基本情况和风险偏好为您进行专业的投资风险评估，并推荐适合的投资组合。</p>
+            </div>
+
+            <div class="card">
+                <h3>客户基本信息</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>姓名 <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="请输入您的真实姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>手机号 <span class="required">*</span></label>
+                        <input type="tel" class="form-input" placeholder="请输入您的手机号码" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>身份证号 <span class="required">*</span></label>
+                        <input type="text" class="form-input" placeholder="请输入您的身份证号码" required>
+                    </div>
+                    <div class="form-group">
+                        <label>电子邮箱</label>
+                        <input type="email" class="form-input" placeholder="请输入您的邮箱地址">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>职业</label>
+                        <input type="text" class="form-input" placeholder="请输入您的职业">
+                    </div>
+                    <div class="form-group">
+                        <label>投资金额 <span class="required">*</span></label>
+                        <input type="number" class="form-input" placeholder="请输入计划投资金额（万元）" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>风险评估问卷</h3>
+                <p>请根据您的实际情况选择最符合的选项</p>
+                
+                <div class="form-group">
+                    <label>1. 您的年龄范围？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="age">18-30岁</div>
+                        <div class="option-btn" data-group="age">31-45岁</div>
+                        <div class="option-btn" data-group="age">46-60岁</div>
+                        <div class="option-btn" data-group="age">60岁以上</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>2. 您的年收入水平？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="income">10万以下</div>
+                        <div class="option-btn" data-group="income">10-30万</div>
+                        <div class="option-btn" data-group="income">30-50万</div>
+                        <div class="option-btn" data-group="income">50万以上</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>3. 您的投资经验？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="experience">无经验</div>
+                        <div class="option-btn" data-group="experience">1-3年</div>
+                        <div class="option-btn" data-group="experience">3-5年</div>
+                        <div class="option-btn" data-group="experience">5年以上</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>4. 您能承受的最大亏损？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="risk-tolerance">5%以内</div>
+                        <div class="option-btn" data-group="risk-tolerance">5-15%</div>
+                        <div class="option-btn" data-group="risk-tolerance">15-30%</div>
+                        <div class="option-btn" data-group="risk-tolerance">30%以上</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>5. 您的投资目标？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="goal">资产保值</div>
+                        <div class="option-btn" data-group="goal">稳健增值</div>
+                        <div class="option-btn" data-group="goal">积极增长</div>
+                        <div class="option-btn" data-group="goal">追求高收益</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>6. 您的投资期限？</label>
+                    <div class="form-options">
+                        <div class="option-btn" data-group="period">1年以内</div>
+                        <div class="option-btn" data-group="period">1-3年</div>
+                        <div class="option-btn" data-group="period">3-5年</div>
+                        <div class="option-btn" data-group="period">5年以上</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>风险评分</label>
+                    <div class="risk-score">
+                        <div class="risk-indicator" id="risk-indicator"></div>
+                    </div>
+                    <div class="risk-level">
+                        <span class="badge badge-moderate" id="risk-badge">稳健型投资者</span>
+                        <span id="risk-description">评分：65/100 - 适合中等风险投资产品</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-large" onclick="submitAssessment()">提交风险评估</button>
+            </div>
+        </div>
+
+        <!-- 投资建议 -->
+        <div id="investment-advice" class="content hidden">
+            <h2 class="section-title">投资建议</h2>
+            <p>基于您的风险评估结果，为您推荐以下投资组合</p>
+
+            <div class="portfolio-grid">
+                <div class="portfolio-card">
+                    <div class="portfolio-header">
+                        <div class="portfolio-title">保守型组合</div>
+                        <span class="badge badge-conservative">低风险</span>
+                        <div>预期年化收益：4-6%</div>
+                    </div>
+                    <h4>资产配置</h4>
+                    <div class="allocation-item">
+                        <span>货币基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 40%;"></div>
+                        </div>
+                        <span>40%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>国债</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 30%;"></div>
+                        </div>
+                        <span>30%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>银行理财</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 20%;"></div>
+                        </div>
+                        <span>20%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>债券基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 10%;"></div>
+                        </div>
+                        <span>10%</span>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">选择此组合</button>
+                </div>
+
+                <div class="portfolio-card" style="border-color: #667eea;">
+                    <div class="portfolio-header">
+                        <div class="portfolio-title">稳健型组合</div>
+                        <span class="badge badge-moderate">中风险</span>
+                        <div>预期年化收益：6-10%</div>
+                    </div>
+                    <h4>资产配置</h4>
+                    <div class="allocation-item">
+                        <span>混合基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 35%;"></div>
+                        </div>
+                        <span>35%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>债券基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 25%;"></div>
+                        </div>
+                        <span>25%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>优质股票</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 25%;"></div>
+                        </div>
+                        <span>25%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>货币基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 15%;"></div>
+                        </div>
+                        <span>15%</span>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">选择此组合</button>
+                </div>
+
+                <div class="portfolio-card">
+                    <div class="portfolio-header">
+                        <div class="portfolio-title">激进型组合</div>
+                        <span class="badge badge-aggressive">高风险</span>
+                        <div>预期年化收益：10-15%</div>
+                    </div>
+                    <h4>资产配置</h4>
+                    <div class="allocation-item">
+                        <span>成长股票</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 50%;"></div>
+                        </div>
+                        <span>50%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>科技基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 25%;"></div>
+                        </div>
+                        <span>25%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>新兴市场</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 15%;"></div>
+                        </div>
+                        <span>15%</span>
+                    </div>
+                    <div class="allocation-item">
+                        <span>债券基金</span>
+                        <div class="allocation-bar">
+                            <div class="allocation-fill" style="width: 10%;"></div>
+                        </div>
+                        <span>10%</span>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;">选择此组合</button>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+
+    <script>
+        let riskScore = 65;
+        let selectedAnswers = {};
+
+        function showTab(tabId) {
+            // 隐藏所有内容
+            const contents = document.querySelectorAll('.content');
+            contents.forEach(content => content.classList.add('hidden'));
+            
+            // 移除所有标签的active类
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 显示选中的内容
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // 添加active类到对应的标签
+            event.target.classList.add('active');
+        }
+
+        function updateRiskScore() {
+            // 简单的风险评分算法
+            let score = 50; // 基础分
+            
+            // 年龄影响
+            if (selectedAnswers.age === '18-30岁') score += 15;
+            else if (selectedAnswers.age === '31-45岁') score += 10;
+            else if (selectedAnswers.age === '46-60岁') score += 5;
+            else if (selectedAnswers.age === '60岁以上') score -= 10;
+            
+            // 收入影响
+            if (selectedAnswers.income === '50万以上') score += 15;
+            else if (selectedAnswers.income === '30-50万') score += 10;
+            else if (selectedAnswers.income === '10-30万') score += 5;
+            
+            // 经验影响
+            if (selectedAnswers.experience === '5年以上') score += 15;
+            else if (selectedAnswers.experience === '3-5年') score += 10;
+            else if (selectedAnswers.experience === '1-3年') score += 5;
+            
+            // 风险承受能力影响
+            if (selectedAnswers['risk-tolerance'] === '30%以上') score += 20;
+            else if (selectedAnswers['risk-tolerance'] === '15-30%') score += 10;
+            else if (selectedAnswers['risk-tolerance'] === '5-15%') score += 5;
+            else if (selectedAnswers['risk-tolerance'] === '5%以内') score -= 10;
+            
+            // 投资目标影响
+            if (selectedAnswers.goal === '追求高收益') score += 15;
+            else if (selectedAnswers.goal === '积极增长') score += 10;
+            else if (selectedAnswers.goal === '稳健增值') score += 5;
+            else if (selectedAnswers.goal === '资产保值') score -= 5;
+            
+            // 投资期限影响
+            if (selectedAnswers.period === '5年以上') score += 10;
+            else if (selectedAnswers.period === '3-5年') score += 5;
+            else if (selectedAnswers.period === '1年以内') score -= 10;
+            
+            riskScore = Math.max(0, Math.min(100, score));
+            
+            // 更新显示
+            const indicator = document.getElementById('risk-indicator');
+            const badge = document.getElementById('risk-badge');
+            const description = document.getElementById('risk-description');
+            
+            indicator.style.left = riskScore + '%';
+            
+            let riskLevel, badgeClass, desc;
+            if (riskScore < 40) {
+                riskLevel = '保守型投资者';
+                badgeClass = 'badge-conservative';
+                desc = `评分：${riskScore}/100 - 适合低风险投资产品`;
+            } else if (riskScore < 70) {
+                riskLevel = '稳健型投资者';
+                badgeClass = 'badge-moderate';
+                desc = `评分：${riskScore}/100 - 适合中等风险投资产品`;
+            } else {
+                riskLevel = '激进型投资者';
+                badgeClass = 'badge-aggressive';
+                desc = `评分：${riskScore}/100 - 适合高风险投资产品`;
+            }
+            
+            badge.textContent = riskLevel;
+            badge.className = 'badge ' + badgeClass;
+            description.textContent = desc;
+        }
+
+        function submitAssessment() {
+            // 检查必填字段
+            const requiredFields = document.querySelectorAll('input[required]');
+            let allFilled = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    allFilled = false;
+                    field.style.borderColor = '#F44336';
+                } else {
+                    field.style.borderColor = '#ddd';
+                }
+            });
+            
+            if (!allFilled) {
+                alert('请填写所有必填信息！');
+                return;
+            }
+            
+            // 检查问卷是否完成
+            const requiredGroups = ['age', 'income', 'experience', 'risk-tolerance', 'goal', 'period'];
+            const missingGroups = requiredGroups.filter(group => !selectedAnswers[group]);
+            
+            if (missingGroups.length > 0) {
+                alert('请完成所有风险评估问题！');
+                return;
+            }
+            
+            alert('风险评估提交成功！系统将为您生成投资建议并进入审核流程。');
+            
+            // 自动切换到投资建议页面
+            showTab('investment-advice');
+            document.querySelector('[onclick="showTab(\'investment-advice\')"]').classList.add('active');
+        }
+
+        // 选项按钮点击效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const group = this.getAttribute('data-group');
+                    
+                    // 移除同组其他按钮的选中状态
+                    const siblings = document.querySelectorAll(`[data-group="${group}"]`);
+                    siblings.forEach(sibling => sibling.classList.remove('selected'));
+                    
+                    // 添加选中状态
+                    this.classList.add('selected');
+                    
+                    // 记录选择
+                    selectedAnswers[group] = this.textContent;
+                    
+                    // 更新风险评分
+                    updateRiskScore();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
