@@ -6,9 +6,15 @@ spring:
     name: customer-questionnaire-service
   
   datasource:
+<<<<<<< HEAD
     url: jdbc:mysql://localhost:3307/audit_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: 123456
+=======
+    url: jdbc:mysql://47.99.213.155:3306/audit_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: manba
+    password: 114514
+>>>>>>> 13b8b441ad6af1e54e0150241a9e82667a73d54b
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
