@@ -73,3 +73,27 @@ CREATE TABLE risk_assessment_result (
     INDEX idx_result_customer (customer_id),
     INDEX idx_result_stage (stage)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审核结果记录表';
+
+
+Task3:
+增加以下功能：在submitQuestionnaire处理过程中，如果一切校验通过，则向audit_log表新增一条记录,表示该客户进入审核流程。
+初始审核阶段为0初级，审核状态为为分配。你只需要实现这个功能。代码必须精确、模块化、可测试。注意每个customer只能有一条audit_log记录，表示该客户处在审核流的哪个状态。一个客户只能开启一个审核流程。如果有新增依赖，请修改pom文件。
+
+
+
+
+
+
+
+
+
+
+Task4:
+增加以下功能，并设计审核员前端路径（GET 任务/ POST 结果）
+审核员有四个等级，对应审核状态的四个阶段（audit_log 中的 stage 阶段）：0初级，1中级，2高级，3委员会
+根据（risk_assessment表中的score）将客户分为保守型，稳健型，激进型。
+
+审核员GET任务：
+不同级别审核员只能获取对应审核等级的任务，扫描audit_log，获取对应等级且状态为 0未分配 的任务，同时修改为 1已分配未完成。
+
+审核员POST结果：

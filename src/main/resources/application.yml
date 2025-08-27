@@ -6,9 +6,9 @@ spring:
     name: customer-questionnaire-service
   
   datasource:
-    url: jdbc:mysql://localhost:3306/audit_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3307/audit_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:

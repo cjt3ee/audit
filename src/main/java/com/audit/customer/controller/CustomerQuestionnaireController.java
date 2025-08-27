@@ -4,6 +4,7 @@ import com.audit.customer.dto.ApiResponse;
 import com.audit.customer.dto.AuditStatusResponse;
 import com.audit.customer.dto.CustomerQuestionnaireRequest;
 import com.audit.customer.exception.CustomerAlreadyExistsException;
+import com.audit.customer.exception.CustomerAuditAlreadyExistsException;
 import com.audit.customer.service.AuditStatusService;
 import com.audit.customer.service.CustomerQuestionnaireService;
 import jakarta.validation.Valid;
@@ -47,6 +48,9 @@ public class CustomerQuestionnaireController {
             return ResponseEntity.ok(ApiResponse.success("问卷提交成功", customerId));
         } catch (CustomerAlreadyExistsException e) {
             logger.warn("Customer already exists: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
+        } catch (CustomerAuditAlreadyExistsException e) {
+            logger.warn("Customer audit already exists: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Error creating customer questionnaire", e);
