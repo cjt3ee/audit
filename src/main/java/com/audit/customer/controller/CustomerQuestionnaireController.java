@@ -1,8 +1,10 @@
 package com.audit.customer.controller;
 
 import com.audit.customer.dto.ApiResponse;
+import com.audit.customer.dto.AuditStatusResponse;
 import com.audit.customer.dto.CustomerQuestionnaireRequest;
 import com.audit.customer.exception.CustomerAlreadyExistsException;
+import com.audit.customer.service.AuditStatusService;
 import com.audit.customer.service.CustomerQuestionnaireService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -21,6 +23,9 @@ public class CustomerQuestionnaireController {
 
     @Autowired
     private CustomerQuestionnaireService customerQuestionnaireService;
+    
+    @Autowired
+    private AuditStatusService auditStatusService;
 
     @PostMapping("/questionnaire")
     public ResponseEntity<ApiResponse<Long>> submitQuestionnaire(
@@ -45,6 +50,19 @@ public class CustomerQuestionnaireController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Error creating customer questionnaire", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("服务器内部错误"));
+        }
+    }
+    
+    @GetMapping("/audit-status/{customerId}")
+    public ResponseEntity<ApiResponse<AuditStatusResponse>> getAuditStatus(@PathVariable Long customerId) {
+        try {
+            AuditStatusResponse auditStatus = auditStatusService.getAuditStatus(customerId);
+            logger.info("Audit status retrieved for customer ID: {}", customerId);
+            return ResponseEntity.ok(ApiResponse.success("查询成功", auditStatus));
+        } catch (Exception e) {
+            logger.error("Error retrieving audit status for customer ID: {}", customerId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("服务器内部错误"));
         }
