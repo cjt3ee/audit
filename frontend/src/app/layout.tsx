@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// 使用系统字体，避免网络下载问题
-const fontSans = {
-  variable: "--font-sans",
-};
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
-const fontMono = {
-  variable: "--font-mono",
-};
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "申请审核界面",
@@ -23,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className="antialiased font-sans"
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>
