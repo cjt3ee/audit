@@ -105,12 +105,12 @@ export default function HomePage() {
                     客户入口
                   </button>
 
-                  <button
+                  <Link href="/auditor"
                       onClick={handleAuditorClick}
                       className="text-gray-600 hover:text-blue-600 transition-colors px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-50"
                   >
                     审核入口
-                  </button>
+                  </Link>
 
                   <Link href="/login"
                       onClick={handleLoginClick}
@@ -140,12 +140,12 @@ export default function HomePage() {
                   </p>
 
                   <div className="flex flex-wrap gap-4">
-                    <Link href={'/estimate'}
+                    <Link href={'/questionnaire'}
                         onClick={handleStartEvaluationClick}
                         className="bg-blue-600 text-white px-6 py-3 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5 hover:bg-blue-700 flex items-center font-medium"
                     >
                       <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-                      开始评估
+                      填写问卷
                     </Link>
 
                     <button
