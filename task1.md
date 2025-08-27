@@ -127,5 +127,25 @@ Task5:
 
 
 Task6:
-TODO: 
-投资建议
+GET /api/customer/audit-status里面的逻辑需要修改。
+修改成以下逻辑：
+增加以下功能 客户需要获得审核结果，需要根据customer_id 查询审核状态表audit_log，只有status == 3的才有最终审核结果，其他status返回审核中的信息。如果有最终结果，从risk_assessment_result表中根据audit_id获取所有相关结果（因为多轮审核会有多个结果）。
+获取最后一个审核结果里面的"riskScore"。根据最终riskScore返回用户所属的风险类别。
+同样的，你不需要考虑前端，只需要实现后端。
+代码必须精确、模块化、可测试。
+
+response应该长这样：
+
+
+{
+    "success": true,
+    "message": "查询成功",
+    "data": {
+        "customerId": 4,
+        "status": "completed",
+        "message": "审核已完成",
+        "results": [
+            "tpye" : 0 // 0 : 稳健 1：保守 2.
+        ]
+    }
+}
