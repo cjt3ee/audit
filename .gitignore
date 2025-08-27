@@ -1,0 +1,29 @@
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+
+# Maven
+/target/
+/out/
+
+# IDEs
+.idea/
+*.iws
+*.ipr
+*.iml
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Others
+*.tmp
+*.bak
