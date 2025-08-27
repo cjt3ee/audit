@@ -23,26 +23,11 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     open-in-view: false
-  
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-      retries: 3
-      properties:
-        enable.idempotence: true
-        max.in.flight.requests.per.connection: 1
 
 # 审核任务配置
 audit:
   task:
     max-batch-size: 10
-
-kafka:
-  topic:
-    audit-completion: audit-completion
 
 logging:
   level:
