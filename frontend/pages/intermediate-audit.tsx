@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getMergedTasks, submitAuditResult, getAuditHistory, removeCompletedTask, clearCachedTasks, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm, getMaxLossText } from '../utils/auditorApi';
+import { getMergedTasks, submitAuditResult, getAuditHistory, getAuditorHistory, removeCompletedTask, clearCachedTasks, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm, getMaxLossText } from '../utils/auditorApi';
 import { AuditTaskDto, AuditForm, AuditResultDto } from '../types/auditor';
 
 const IntermediateAuditPage: React.FC = () => {
@@ -547,15 +547,10 @@ const IntermediateAuditPage: React.FC = () => {
                       }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
-                            审核ID: #{record.auditId}
+                            审核流程ID: {record.auditId}
                           </div>
                           <div style={{ color: '#666', fontSize: '14px', marginBottom: '2px' }}>
-                            结果: <span style={{ 
-                              color: record.approved ? '#4CAF50' : '#F44336',
-                              fontWeight: 'bold' 
-                            }}>
-                              {record.approved ? '通过' : '拒绝'}
-                            </span> | 风险评分: {record.riskScore}分
+                            风险评分: {record.riskScore}分
                           </div>
                           <div style={{ color: '#666', fontSize: '14px' }}>
                             审核时间: {formatDateTime(record.createdAt)}
@@ -569,7 +564,7 @@ const IntermediateAuditPage: React.FC = () => {
                               background: '#f8f9fa',
                               padding: '8px',
                               borderRadius: '4px',
-                              borderLeft: '3px solid #4CAF50'
+                              borderLeft: '3px solid #667eea'
                             }}>
                               审核意见: {record.opinion}
                             </div>
