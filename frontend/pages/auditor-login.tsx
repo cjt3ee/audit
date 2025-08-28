@@ -14,6 +14,7 @@ interface LoginResponse {
     account: string;
     level: number;
     levelName: string;
+    token?: string;
   };
 }
 

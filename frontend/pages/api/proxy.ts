@@ -2,13 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import https from 'https';
 
-const BACKEND_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://localhost:8443' 
-  : 'https://localhost:8443'; // 本地测试也使用HTTPS
+const BACKEND_URL = 'https://localhost:8443'; // 根据application.yml配置使用HTTPS 8443端口
 
-// 仅在开发环境下忽略SSL证书验证（用于自签名证书）
+// 忽略SSL证书验证（用于自签名证书）
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: process.env.NODE_ENV === 'production'
+  rejectUnauthorized: false
 });
 
 export default async function handler(
@@ -49,7 +47,7 @@ export default async function handler(
     // 新格式：直接使用完整路径
     targetUrl = `${BACKEND_URL}${targetPath}`;
   } else {
-    // 原有格式：在路径前添加 /api
+    // 原有格式：需要添加/api前缀匹配后端Controller的@RequestMapping
     targetUrl = `${BACKEND_URL}/api/${targetPath}`;
   }
   
@@ -61,16 +59,20 @@ export default async function handler(
     console.log(`Proxy request: ${method} ${targetUrl}`);
     console.log('Request data:', JSON.stringify(requestData, null, 2));
     
-    const response = await axios({
+    const axiosConfig: any = {
       method: method as any,
       url: targetUrl,
       data: requestData,
       headers: {
         'Content-Type': 'application/json',
       },
-      httpsAgent,
       timeout: 10000,
-    });
+    };
+
+    // 使用httpsAgent处理自签名证书
+    axiosConfig.httpsAgent = httpsAgent;
+
+    const response = await axios(axiosConfig);
     
     console.log(`Proxy response: ${response.status}`);
     res.status(response.status).json(response.data);

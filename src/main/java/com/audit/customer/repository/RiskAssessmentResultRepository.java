@@ -14,4 +14,6 @@ public interface RiskAssessmentResultRepository extends JpaRepository<RiskAssess
     List<RiskAssessmentResult> findByCustomerId(Long customerId);
     
     List<RiskAssessmentResult> findByAuditIdOrderByStageAsc(Long auditId);
+    
+    List<RiskAssessmentResult> findByAuditorIdOrderByCreatedAtDesc(Long auditorId);
 }

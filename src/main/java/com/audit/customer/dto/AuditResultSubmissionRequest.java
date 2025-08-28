@@ -15,6 +15,9 @@ public class AuditResultSubmissionRequest {
     @Max(value = 3, message = "审核员等级必须在0-3之间")
     private Integer auditorLevel;
     
+    @NotNull(message = "审核员ID不能为空")
+    private Long auditorId;
+    
     @NotNull(message = "审核结果不能为空")
     private Boolean approved;
     
@@ -28,10 +31,11 @@ public class AuditResultSubmissionRequest {
     
     public AuditResultSubmissionRequest() {}
     
-    public AuditResultSubmissionRequest(Long auditId, Integer auditorLevel, Boolean approved, 
+    public AuditResultSubmissionRequest(Long auditId, Integer auditorLevel, Long auditorId, Boolean approved, 
                                       Integer riskScore, String opinion) {
         this.auditId = auditId;
         this.auditorLevel = auditorLevel;
+        this.auditorId = auditorId;
         this.approved = approved;
         this.riskScore = riskScore;
         this.opinion = opinion;
@@ -75,5 +79,13 @@ public class AuditResultSubmissionRequest {
     
     public void setOpinion(String opinion) {
         this.opinion = opinion;
+    }
+    
+    public Long getAuditorId() {
+        return auditorId;
+    }
+    
+    public void setAuditorId(Long auditorId) {
+        this.auditorId = auditorId;
     }
 }

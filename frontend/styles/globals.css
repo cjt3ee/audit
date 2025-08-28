@@ -322,6 +322,55 @@ body {
   margin: 10px 0;
 }
 
+.audit-details {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.audit-details h4 {
+  color: #667eea;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.audit-stage-result {
+  background: white;
+  border-left: 4px solid #667eea;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.audit-stage-result:last-child {
+  margin-bottom: 0;
+}
+
+.audit-stage-result p {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.audit-stage-result p:last-child {
+  margin-bottom: 0;
+}
+
+.final-risk-type {
+  background: #e8f5e8;
+  border: 2px solid #4CAF50;
+  border-radius: 6px;
+  padding: 15px;
+  text-align: center;
+}
+
+.final-risk-type p {
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
 @media (max-width: 768px) {
   .tabs {
     flex-direction: column;

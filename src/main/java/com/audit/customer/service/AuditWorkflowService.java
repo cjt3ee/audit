@@ -71,6 +71,7 @@ public class AuditWorkflowService {
         result.setAuditId(request.getAuditId());
         result.setStage(request.getAuditorLevel());
         result.setCustomerId(auditLog.getCustomerId());
+        result.setAuditorId(request.getAuditorId());
         result.setRiskScore(request.getRiskScore());
         result.setOpinion(request.getOpinion());
         riskAssessmentResultRepository.save(result);

@@ -47,58 +47,66 @@ public class AuditTaskService {
     private int maxBatchSize;
     
     @Transactional
-    public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel) {
-        return assignTasksToAuditor(auditorLevel, null);
+    public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel, Long auditorId) {
+        return assignTasksToAuditor(auditorLevel, auditorId, null);
     }
     
     @Transactional
-    public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel, List<Long> excludeTaskIds) {
+    public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel, Long auditorId, List<Long> excludeTaskIds) {
         // 验证审核员等级
         if (auditorLevel < 0 || auditorLevel > 3) {
             throw new IllegalArgumentException("审核员等级必须在0-3之间");
         }
         
-        // 获取待分配的任务，可选择性排除已分配的任务
-        Pageable pageable = PageRequest.of(0, maxBatchSize);
-        List<AuditLog> availableTasks;
+        // 1. 获取该审核员已经抢占但未完成的任务
+        List<AuditLog> existingTasks = auditLogRepository.findByStageAndStatusAndAuditorIdOrderByCreatedAtAsc(
+                auditorLevel, 1, auditorId);
         
-        if (excludeTaskIds == null || excludeTaskIds.isEmpty()) {
-            availableTasks = auditLogRepository.findByStageAndStatusOrderByCreatedAtAsc(
-                    auditorLevel, 0, pageable);
-        } else {
-            availableTasks = auditLogRepository.findByStageAndStatusAndIdNotInOrderByCreatedAtAsc(
-                    auditorLevel, 0, excludeTaskIds, pageable);
+        // 2. 获取新的待分配任务（减去已抢占的任务数量）
+        int remainingSlots = maxBatchSize - existingTasks.size();
+        List<AuditLog> newTasks = new ArrayList<>();
+        
+        if (remainingSlots > 0) {
+            Pageable pageable = PageRequest.of(0, remainingSlots);
+            List<AuditLog> availableTasks;
+            
+            if (excludeTaskIds == null || excludeTaskIds.isEmpty()) {
+                availableTasks = auditLogRepository.findByStageAndStatusOrderByCreatedAtAsc(
+                        auditorLevel, 0, pageable);
+            } else {
+                availableTasks = auditLogRepository.findByStageAndStatusAndIdNotInOrderByCreatedAtAsc(
+                        auditorLevel, 0, excludeTaskIds, pageable);
+            }
+            
+            if (!availableTasks.isEmpty()) {
+                // 提取audit_log的ID列表
+                List<Long> auditIds = availableTasks.stream()
+                        .map(AuditLog::getId)
+                        .collect(Collectors.toList());
+                
+                // 原子性更新状态和审核员ID：0未分配 -> 1已分配未完成
+                int updatedCount = auditLogRepository.updateStatusAndAuditorByIds(auditIds, 1, auditorId, 0);
+                
+                // 获取实际成功分配的任务
+                if (updatedCount > 0) {
+                    newTasks = auditLogRepository.findAllById(auditIds).stream()
+                            .filter(audit -> audit.getStatus() == 1 && auditorId.equals(audit.getAuditorId()))
+                            .collect(Collectors.toList());
+                }
+            }
         }
         
-        if (availableTasks.isEmpty()) {
-            return new AuditTaskResponse(auditorLevel, new ArrayList<>());
-        }
+        // 3. 合并已有任务和新抢占的任务
+        List<AuditLog> allTasks = new ArrayList<>();
+        allTasks.addAll(existingTasks);
+        allTasks.addAll(newTasks);
         
-        // 提取audit_log的ID列表
-        List<Long> auditIds = availableTasks.stream()
-                .map(AuditLog::getId)
-                .collect(Collectors.toList());
-        
-        // 原子性更新状态：0未分配 -> 1已分配未完成
-        int updatedCount = auditLogRepository.updateStatusByIds(auditIds, 1, 0);
-        
-        // 如果更新的数量不匹配，说明有并发冲突，重新获取实际更新的记录
-        List<AuditLog> assignedTasks;
-        if (updatedCount != availableTasks.size()) {
-            // 重新查询已经被分配的任务
-            assignedTasks = auditLogRepository.findAllById(auditIds).stream()
-                    .filter(audit -> audit.getStatus() == 1)
-                    .collect(Collectors.toList());
-        } else {
-            assignedTasks = availableTasks;
-        }
-        
-        if (assignedTasks.isEmpty()) {
+        if (allTasks.isEmpty()) {
             return new AuditTaskResponse(auditorLevel, new ArrayList<>());
         }
         
         // 获取客户信息和风险评估信息
-        List<AuditTaskDto> taskDtos = buildAuditTaskDtos(assignedTasks);
+        List<AuditTaskDto> taskDtos = buildAuditTaskDtos(allTasks);
         
         return new AuditTaskResponse(auditorLevel, taskDtos);
     }
@@ -135,7 +143,17 @@ public class AuditTaskService {
                         risk.getScore(),
                         riskTypeDescription,
                         auditLog.getCreatedAt(),
-                        customer.getInvestAmount()
+                        customer.getInvestAmount(),
+                        auditLog.getAiAudit(),
+                        customer.getEmail(),
+                        customer.getOccupation(),
+                        customer.getIdCard(),
+                        risk.getAnnualIncome(),
+                        risk.getInvestmentAmount(),
+                        risk.getInvestmentExperience(),
+                        risk.getMaxLoss(),
+                        risk.getInvestmentTarget(),
+                        risk.getInvestmentExpire()
                 );
                 taskDtos.add(taskDto);
             }
@@ -149,6 +167,7 @@ public class AuditTaskService {
         
         return results.stream()
                 .map(result -> new AuditResultDto(
+                        result.getAuditId(),
                         result.getStage(),
                         result.getRiskScore(), 
                         result.getOpinion(),
@@ -156,14 +175,17 @@ public class AuditTaskService {
                 .collect(Collectors.toList());
     }
     
-    @Transactional
-    public void releaseAuditTask(Long auditId) {
-        // 将任务状态从1(进行中)改回0(未开始)，只有状态为1的才能释放
-        int updatedCount = auditLogRepository.updateStatusByIds(List.of(auditId), 0, 1);
-        if (updatedCount > 0) {
-            logger.info("Released audit task with ID: {} (status: 1 -> 0)", auditId);
-        } else {
-            logger.warn("Failed to release audit task with ID: {} (task may not be in progress)", auditId);
-        }
+    public List<AuditResultDto> getAuditorHistory(Long auditorId) {
+        List<RiskAssessmentResult> results = riskAssessmentResultRepository.findByAuditorIdOrderByCreatedAtDesc(auditorId);
+        
+        return results.stream()
+                .map(result -> new AuditResultDto(
+                        result.getAuditId(),
+                        result.getStage(),
+                        result.getRiskScore(), 
+                        result.getOpinion(),
+                        result.getCreatedAt()))
+                .collect(Collectors.toList());
     }
+    
 }

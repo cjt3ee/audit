@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class AuditResultDto {
     
+    private Long auditId;
     private Integer stage;
     private Integer riskScore;
     private String opinion;
@@ -11,11 +12,20 @@ public class AuditResultDto {
     
     public AuditResultDto() {}
     
-    public AuditResultDto(Integer stage, Integer riskScore, String opinion, LocalDateTime createdAt) {
+    public AuditResultDto(Long auditId, Integer stage, Integer riskScore, String opinion, LocalDateTime createdAt) {
+        this.auditId = auditId;
         this.stage = stage;
         this.riskScore = riskScore;
         this.opinion = opinion;
         this.createdAt = createdAt;
+    }
+    
+    public Long getAuditId() {
+        return auditId;
+    }
+    
+    public void setAuditId(Long auditId) {
+        this.auditId = auditId;
     }
     
     public Integer getStage() {

@@ -479,15 +479,54 @@ const CustomerPage = () => {
                   
                   {auditResult.results && auditResult.results.length > 0 && (
                     <div>
-                      <p><strong>风险类型:</strong></p>
-                      {auditResult.results.map((typeCode: number, index: number) => (
-                        <span 
-                          key={index} 
-                          className={`badge risk-type-badge ${getRiskTypeBadgeClass(typeCode)}`}
-                        >
-                          {getRiskTypeText(typeCode)}
-                        </span>
-                      ))}
+                      <div className="audit-details">
+                        <h4>审核详情:</h4>
+                        {auditResult.results.map((result: any, index: number) => (
+                          <div key={index} className="audit-stage-result">
+                            <p><strong>审核阶段:</strong> {
+                              result.stage === 0 ? '初级审核' :
+                              result.stage === 1 ? '中级审核' :
+                              result.stage === 2 ? '高级审核' :
+                              result.stage === 3 ? '委员会审核' : '未知阶段'
+                            }</p>
+                            <p><strong>风险评分:</strong> {result.riskScore}</p>
+                            <p><strong>审核意见:</strong> {result.opinion}</p>
+                            <p><strong>审核时间:</strong> {new Date(result.createdAt).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="final-risk-type">
+                        <p><strong>最终风险分类:</strong></p>
+                        {(() => {
+                          // 获取最后一个审核结果的风险评分
+                          const lastResult = auditResult.results[auditResult.results.length - 1];
+                          const finalScore = lastResult.riskScore;
+                          
+                          // 根据风险分数映射风险类型
+                          let riskType: string;
+                          let badgeClass: string;
+                          
+                          if (finalScore >= 0 && finalScore <= 40) {
+                            riskType = '保守型';
+                            badgeClass = 'badge-conservative';
+                          } else if (finalScore >= 41 && finalScore <= 70) {
+                            riskType = '稳健型';
+                            badgeClass = 'badge-moderate';
+                          } else if (finalScore >= 71 && finalScore <= 100) {
+                            riskType = '激进型';
+                            badgeClass = 'badge-aggressive';
+                          } else {
+                            riskType = '未知类型';
+                            badgeClass = 'badge-moderate';
+                          }
+                          
+                          return (
+                            <span className={`badge risk-type-badge ${badgeClass}`}>
+                              {riskType} (评分: {finalScore})
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                   )}
                 </div>

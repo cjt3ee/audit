@@ -57,7 +57,7 @@ public class AuditStatusService {
         
         // 根据最终风险评分确定风险类型
         Integer riskTypeCode = mapRiskScoreToType(finalRiskScore.get());
-        AuditResultDto result = new AuditResultDto(riskTypeCode, finalRiskScore.get(), "审核完成", LocalDateTime.now());
+        AuditResultDto result = new AuditResultDto(null, riskTypeCode, finalRiskScore.get(), "审核完成", LocalDateTime.now());
         List<AuditResultDto> results = Arrays.asList(result);
         
         return new AuditStatusResponse(customerId, "completed", "审核已完成", results);

@@ -20,6 +20,9 @@ public class RiskAssessmentResult {
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
     
+    @Column(name = "auditor_id")
+    private Long auditorId;
+    
     @Column(name = "risk_score", nullable = false)
     private Integer riskScore;
     
@@ -105,5 +108,13 @@ public class RiskAssessmentResult {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public Long getAuditorId() {
+        return auditorId;
+    }
+    
+    public void setAuditorId(Long auditorId) {
+        this.auditorId = auditorId;
     }
 }

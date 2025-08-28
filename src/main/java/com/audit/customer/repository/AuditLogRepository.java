@@ -35,9 +35,21 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                                                                      @Param("excludeIds") List<Long> excludeIds, 
                                                                      Pageable pageable);
     
+    @Query("SELECT al FROM AuditLog al WHERE al.stage = :stage AND al.status = :status AND al.auditorId = :auditorId ORDER BY al.createdAt ASC")
+    List<AuditLog> findByStageAndStatusAndAuditorIdOrderByCreatedAtAsc(@Param("stage") Integer stage, 
+                                                                        @Param("status") Integer status,
+                                                                        @Param("auditorId") Long auditorId);
+    
     @Modifying
     @Query("UPDATE AuditLog al SET al.status = :newStatus WHERE al.id IN :auditIds AND al.status = :oldStatus")
     int updateStatusByIds(@Param("auditIds") List<Long> auditIds, 
                           @Param("newStatus") Integer newStatus, 
                           @Param("oldStatus") Integer oldStatus);
+                          
+    @Modifying
+    @Query("UPDATE AuditLog al SET al.status = :newStatus, al.auditorId = :auditorId WHERE al.id IN :auditIds AND al.status = :oldStatus")
+    int updateStatusAndAuditorByIds(@Param("auditIds") List<Long> auditIds, 
+                                    @Param("newStatus") Integer newStatus, 
+                                    @Param("auditorId") Long auditorId,
+                                    @Param("oldStatus") Integer oldStatus);
 }

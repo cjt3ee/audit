@@ -9,6 +9,20 @@ export interface AuditTaskDto {
   riskType: string;
   createdAt: string;
   investAmount?: number;
+  aiAudit?: string;
+  
+  // 客户详细信息
+  customerEmail?: string;
+  customerOccupation?: string;
+  customerIdCard?: string;
+  
+  // 风险评估详细信息
+  annualIncome?: number;
+  investmentAmount?: number;
+  investmentExperience?: string;
+  maxLoss?: number;
+  investmentTarget?: string;
+  investmentExpire?: string;
 }
 
 // 审核结果历史记录
@@ -28,6 +42,7 @@ export interface AuditTaskResponse {
 export interface AuditResultSubmissionRequest {
   auditId: number;
   auditorLevel: number;
+  auditorId: number;
   approved: boolean;
   riskScore: number;
   opinion: string;

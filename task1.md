@@ -254,3 +254,73 @@ curl https://api.deepseek.com/chat/completions \
 注意 你需要设置kafka的参数，kafka在本地部署测试。
 代码必须精确、模块化。不需要生成单测。
 
+task11:
+在客户进行审核结果查询时，服务端返回如下结果。
+{
+    "success": true,
+    "message": "查询成功",
+    "data": {
+        "customerId": 79,
+        "status": "completed",
+        "message": "审核已完成",
+        "results": [
+            {
+                "stage": 2,
+                "riskScore": 90,
+                "opinion": "审核完成",
+                "createdAt": "2025-08-28T14:31:22.6919102"
+            }
+        ]
+    }
+}
+但是前端显示未知类型。修改前端代码，根据风险分给出投资类型，给用户显示正确的风险分类：
+    ("保守型", 0, 40),
+    ("稳健型", 41, 70),
+    ("激进型", 71, 100);
+
+
+Task12:
+我在task10中生成AI审核建议，共提供审核员参考。
+现在，前端拉取审核任务的时候需要同时把audit_log中ai_audit字段的AI推荐意见回显在所有级别审核人员的审核页面上。
+等审核员点击开始审核是，把AI提供的建议显示给审核员。
+为此，你需要
+1. 修改后端把ai_audit传递到前端
+2. 前端显示AI意见。
+代码必须精确、模块化。不需要生成单测。
+
+Task13:
+详细表单信息 包括风险评估问卷的内容。审核员点击 展开详情时，应该显示该客户之前提交的风险评估表的各项信息。
+为此，你需要
+1. 修改后端把风险评估表信息传递到前端。（在获取审核任务时）
+2. 修改前端详细表单信息的显示，需要包括风险评估表的信息。
+代码必须精确、模块化。不需要生成单测。
+
+Task14:
+前端的最大亏损承受显示有点小问题，不要显示代码1，要显示代码对应的亏损承受。
+只修改前端代码
+对应规则如下：
+1:5%以内
+2:5%以内
+3:5-15%
+4:30%以上
+
+
+Task15:
+根据以下步骤修改代码
+0. 针对controller中releaseAuditTask方法，需要删除前后端逻辑，避免把status的值从1改为0；删除前端调用和后端releaseAuditTask函数
+1. 需要在auditor_log表中新插入一个字段audit_id，记录该审核任务对应审核人员id；同样的需要在risk_assessment_result中新增对应的auditor_id字段。
+2. 在审核员提交结果时，把审核员id存入risk_assessment_result中。
+3. 当审核员领取审核任务的时候，
+   当该审核员成功抢占到任务时，除了修改status,还要把审核员id存放在audit_log的auditor_id字段中。
+   返回审核员新抢占和已抢占未完成的任务（注意需要核对stage和审核员身份）
+
+4. 新增审核员历史审核记录接口。
+   该接口实现 查询 risk_assessment_result，返回该审核人员审核记录历史详情。
+
+5. 然后前端需要根据审核员历史审核记录传递的信息，新加一栏。显示已经审核的任务信息。已审核任务提供查看详情按钮。
+
+Task16:
+修改一下审核员已审核任务的前端回显，不需要显示结果。只需要显示riskScore，opinion，createdAt三个内容
+
+修改一下src\main\java\com\audit\customer\controller\AuditorController.java的@GetMapping("/history/{auditorId}")
+添加一个回传字段，后端需要把audit_id传递给前端，同时前端显示审核流程ID:{audit_id}

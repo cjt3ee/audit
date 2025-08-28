@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getMergedTasks, submitAuditResult, getAuditHistory, releaseAuditTask, removeCompletedTask, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm } from '../utils/auditorApi';
+import { getMergedTasks, submitAuditResult, getAuditHistory, removeCompletedTask, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm, getMaxLossText } from '../utils/auditorApi';
 import { AuditTaskDto, AuditForm, AuditResultDto } from '../types/auditor';
 
 const CommitteeAuditPage: React.FC = () => {
@@ -25,6 +25,8 @@ const CommitteeAuditPage: React.FC = () => {
   const [auditHistory, setAuditHistory] = useState<AuditResultDto[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showDetailedInfo, setShowDetailedInfo] = useState(false);
+  const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+  const [auditorAuditHistory, setAuditorAuditHistory] = useState<AuditResultDto[]>([]);
   const router = useRouter();
 
   // 检查登录状态
@@ -59,7 +61,7 @@ const CommitteeAuditPage: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await getMergedTasks(3); // 投资委员会级别为3
+      const response = await getMergedTasks(3, auditorInfo.auditorId); // 传递审核员ID
       if (response.success && response.data) {
         setTasks(response.data.tasks);
         calculateStats(response.data.tasks);
@@ -100,6 +102,24 @@ const CommitteeAuditPage: React.FC = () => {
     } catch (error) {
       console.error('获取审核历史失败:', error);
       setAuditHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // 获取已审核任务历史
+  const fetchAuditorAuditHistory = async () => {
+    if (!auditorInfo) return;
+    
+    setHistoryLoading(true);
+    try {
+      const response = await getAuditorHistory(auditorInfo.auditorId);
+      if (response.success && response.data) {
+        setAuditorAuditHistory(response.data);
+      }
+    } catch (error) {
+      console.error('获取审核历史失败:', error);
+      setAuditorAuditHistory([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -174,6 +194,7 @@ const CommitteeAuditPage: React.FC = () => {
       const request = {
         auditId: auditForm.auditId,
         auditorLevel: 3, // 投资委员会
+        auditorId: auditorInfo.auditorId, // 添加审核员ID
         approved: auditForm.approved,
         riskScore: auditForm.riskScore,
         opinion: auditForm.opinion
@@ -220,9 +241,13 @@ const CommitteeAuditPage: React.FC = () => {
 
   useEffect(() => {
     if (auditorInfo) {
-      fetchTasks();
+      if (activeTab === 'current') {
+        fetchTasks();
+      } else {
+        fetchAuditorAuditHistory();
+      }
     }
-  }, [auditorInfo]);
+  }, [auditorInfo, activeTab]);
 
   if (!auditorInfo) {
     return (
@@ -281,15 +306,35 @@ const CommitteeAuditPage: React.FC = () => {
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
           overflow: 'hidden'
         }}>
-          <div style={{
-            flex: 1,
-            padding: '15px 20px',
-            textAlign: 'center',
-            background: '#9C27B0',
-            color: 'white',
-            fontSize: '16px'
-          }}>
-            投资委员会审核工作台
+          <div 
+            onClick={() => setActiveTab('current')}
+            style={{
+              flex: 1,
+              padding: '15px 20px',
+              textAlign: 'center',
+              background: activeTab === 'current' ? '#9C27B0' : '#f0f0f0',
+              color: activeTab === 'current' ? 'white' : '#333',
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+          >
+            当前任务
+          </div>
+          <div 
+            onClick={() => setActiveTab('history')}
+            style={{
+              flex: 1,
+              padding: '15px 20px',
+              textAlign: 'center',
+              background: activeTab === 'history' ? '#9C27B0' : '#f0f0f0',
+              color: activeTab === 'history' ? 'white' : '#333',
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+          >
+            已审核任务
           </div>
         </div>
 
@@ -301,7 +346,8 @@ const CommitteeAuditPage: React.FC = () => {
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
         }}>
           {!selectedTask ? (
-            // 任务列表视图
+            activeTab === 'current' ? (
+            // 当前任务列表视图
             <>
               <h2 style={{
                 fontSize: '24px',
@@ -460,6 +506,101 @@ const CommitteeAuditPage: React.FC = () => {
                 </div>
               </div>
             </>
+            ) : (
+            // 已审核任务历史视图
+            <>
+              <h2 style={{
+                fontSize: '24px',
+                marginBottom: '20px',
+                color: '#333',
+                borderBottom: '2px solid #9C27B0',
+                paddingBottom: '10px'
+              }}>
+                已审核任务历史
+              </h2>
+              <p style={{ marginBottom: '20px', color: '#666' }}>查看您已完成的投资委员会审核任务历史记录</p>
+
+              {/* 已审核任务列表 */}
+              <div style={{
+                background: '#f9f9f9',
+                borderRadius: '8px',
+                padding: '20px',
+                marginBottom: '20px',
+                borderLeft: '4px solid #9C27B0'
+              }}>
+                <h3 style={{ marginBottom: '20px' }}>投资委员会审核历史</h3>
+                {historyLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>加载中...</div>
+                ) : auditorAuditHistory.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                    暂无已审核任务历史
+                  </div>
+                ) : (
+                  <div style={{ background: 'white', borderRadius: '8px' }}>
+                    {auditorAuditHistory.map((record, index) => (
+                      <div key={record.auditId} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '20px',
+                        borderBottom: index < auditorAuditHistory.length - 1 ? '1px solid #f0f0f0' : 'none'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                            审核ID: #{record.auditId}
+                          </div>
+                          <div style={{ color: '#666', fontSize: '14px', marginBottom: '2px' }}>
+                            结果: <span style={{ 
+                              color: record.approved ? '#4CAF50' : '#F44336',
+                              fontWeight: 'bold' 
+                            }}>
+                              {record.approved ? '批准' : '拒绝'}
+                            </span> | 风险评分: {record.riskScore}分
+                          </div>
+                          <div style={{ color: '#666', fontSize: '14px' }}>
+                            审核时间: {formatDateTime(record.createdAt)}
+                          </div>
+                          {record.opinion && (
+                            <div style={{ 
+                              color: '#666', 
+                              fontSize: '13px', 
+                              marginTop: '5px',
+                              fontStyle: 'italic',
+                              background: '#f8f9fa',
+                              padding: '8px',
+                              borderRadius: '4px',
+                              borderLeft: '3px solid #9C27B0'
+                            }}>
+                              审核意见: {record.opinion}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                  <button
+                    onClick={fetchAuditorAuditHistory}
+                    disabled={historyLoading}
+                    style={{
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: historyLoading ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      background: historyLoading ? '#ccc' : '#f0f0f0',
+                      color: '#333',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    {historyLoading ? '刷新中...' : '刷新历史'}
+                  </button>
+                </div>
+              </div>
+            </>
+            )
           ) : (
             // 审核表单视图
             <>
@@ -659,40 +800,132 @@ const CommitteeAuditPage: React.FC = () => {
                     border: '1px solid #e0e0e0',
                     animation: 'slideDown 0.3s ease-out'
                   }}>
-                    <h4 style={{ marginTop: '0', marginBottom: '12px', color: '#9C27B0' }}>详细表单信息</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
-                      <div>
-                        <strong>审核ID：</strong>
-                        <span style={{ color: '#666' }}>#{selectedTask.auditId}</span>
+                    <h4 style={{ marginTop: '0', marginBottom: '12px', color: '#f44336' }}>详细表单信息</h4>
+                    
+                    {/* 客户基础信息 */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <h5 style={{ margin: '0 0 10px 0', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>客户基础信息</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
+                        <div>
+                          <strong>审核ID：</strong>
+                          <span style={{ color: '#666' }}>#{selectedTask.auditId}</span>
+                        </div>
+                        <div>
+                          <strong>客户ID：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.customerId}</span>
+                        </div>
+                        <div>
+                          <strong>姓名：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.customerName}</span>
+                        </div>
+                        <div>
+                          <strong>联系电话：</strong>
+                          <span style={{ color: '#666' }}>{formatPhone(selectedTask.customerPhone)}</span>
+                        </div>
+                        <div>
+                          <strong>电子邮箱：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.customerEmail || '未填写'}</span>
+                        </div>
+                        <div>
+                          <strong>职业：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.customerOccupation || '未填写'}</span>
+                        </div>
+                        <div>
+                          <strong>身份证号：</strong>
+                          <span style={{ color: '#666' }}>
+                            {selectedTask.customerIdCard ? selectedTask.customerIdCard.replace(/(.{6})(.*)(.{4})/, '$1****$3') : '未填写'}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>计划投资金额：</strong>
+                          <span style={{ color: '#f44336', fontWeight: 'bold' }}>
+                            {selectedTask.investAmount ? `¥${(selectedTask.investAmount / 10000).toFixed(1)}万` : '未填写'}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <strong>客户ID：</strong>
-                        <span style={{ color: '#666' }}>{selectedTask.customerId}</span>
+                    </div>
+
+                    {/* 风险评估信息 */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <h5 style={{ margin: '0 0 10px 0', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>风险评估问卷</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
+                        <div>
+                          <strong>年收入：</strong>
+                          <span style={{ color: '#666' }}>
+                            {selectedTask.annualIncome !== undefined ? 
+                              `代码${selectedTask.annualIncome}` : '未填写'}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>风险评分：</strong>
+                          <span style={{
+                            color: '#f44336',
+                            fontWeight: 'bold',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: '#f0f0f0'
+                          }}>
+                            {selectedTask.riskScore}分
+                          </span>
+                        </div>
+                        <div>
+                          <strong>投资金额：</strong>
+                          <span style={{ color: '#666' }}>
+                            {selectedTask.investmentAmount ? 
+                              `¥${(selectedTask.investmentAmount / 10000).toFixed(1)}万` : '未填写'}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>最大亏损承受：</strong>
+                          <span style={{ color: '#666' }}>
+                            {getMaxLossText(selectedTask.maxLoss)}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>投资经验：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.investmentExperience || '未填写'}</span>
+                        </div>
+                        <div>
+                          <strong>投资目标：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.investmentTarget || '未填写'}</span>
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <strong>投资期限：</strong>
+                          <span style={{ color: '#666' }}>{selectedTask.investmentExpire || '未填写'}</span>
+                        </div>
+                        <div>
+                          <strong>风险类型：</strong>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            marginLeft: '8px'
+                          }} className={getRiskTypeBadgeClass(selectedTask.riskType)}>
+                            {selectedTask.riskType}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>申请时间：</strong>
+                          <span style={{ color: '#666' }}>{formatDateTime(selectedTask.createdAt)}</span>
+                        </div>
                       </div>
-                      <div>
-                        <strong>审核阶段：</strong>
-                        <span style={{ color: '#9C27B0', fontWeight: 'bold' }}>{getStageText(selectedTask.stage)}</span>
-                      </div>
-                      <div>
-                        <strong>投资金额：</strong>
-                        <span style={{ color: '#f44336', fontWeight: 'bold' }}>
-                          {selectedTask.investAmount ? `¥${(selectedTask.investAmount / 10000).toFixed(1)}万` : '未填写'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong>申请时间：</strong>
-                        <span style={{ color: '#666' }}>{formatDateTime(selectedTask.createdAt)}</span>
-                      </div>
-                      <div>
-                        <strong>风险承受等级：</strong>
-                        <span style={{
-                          padding: '2px 6px',
-                          borderRadius: '10px',
-                          fontSize: '11px',
-                          fontWeight: 'bold'
-                        }} className={getRiskTypeBadgeClass(selectedTask.riskType)}>
-                          {selectedTask.riskType}
-                        </span>
+                    </div>
+
+                    {/* 审核信息 */}
+                    <div>
+                      <h5 style={{ margin: '0 0 10px 0', color: '#333', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>审核信息</h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
+                        <div>
+                          <strong>当前阶段：</strong>
+                          <span style={{ color: '#f44336', fontWeight: 'bold' }}>{getStageText(selectedTask.stage)}</span>
+                        </div>
+                        <div>
+                          <strong>AI建议：</strong>
+                          <span style={{ color: selectedTask.aiAudit ? '#666' : '#999' }}>
+                            {selectedTask.aiAudit || '暂无AI建议'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
@@ -701,13 +934,34 @@ const CommitteeAuditPage: React.FC = () => {
                       padding: '12px',
                       background: '#f8f9fa',
                       borderRadius: '4px',
-                      borderLeft: '3px solid #9C27B0'
+                      borderLeft: '3px solid #f44336'
                     }}>
                       <div style={{ fontSize: '13px', color: '#666' }}>
-                        <strong style={{ color: '#9C27B0' }}>委员会审核说明：</strong>
+                        <strong style={{ color: '#f44336' }}>委员会审核说明：</strong>
                         该客户的风险评估申请已通过所有前序审核阶段，现提交投资委员会进行最终决策。
                         请综合各阶段审核意见，做出最终的投资建议和风险等级确认。
                       </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* AI 推荐意见显示区域 */}
+                {selectedTask.aiAudit && (
+                  <div style={{
+                    background: '#fff3e0',
+                    border: '1px solid #ff9800',
+                    borderRadius: '4px',
+                    padding: '15px',
+                    marginTop: '15px'
+                  }}>
+                    <div style={{ color: '#f57c00', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🤖 AI 审核建议：
+                    </div>
+                    <div style={{ color: '#ef6c00', fontSize: '14px', lineHeight: '1.5' }}>
+                      {selectedTask.aiAudit}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#f57c00', marginTop: '8px', fontStyle: 'italic' }}>
+                      * 此建议由AI系统生成，仅供参考，最终审核结果请基于您的专业判断
                     </div>
                   </div>
                 )}

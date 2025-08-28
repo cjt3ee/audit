@@ -20,6 +20,9 @@ public class AuditLog {
     @Column(name = "stage", nullable = false)
     private Integer stage;
     
+    @Column(name = "auditor_id")
+    private Long auditorId;
+    
     @Column(name = "ai_audit", columnDefinition = "TEXT")
     private String aiAudit;
     
@@ -94,5 +97,13 @@ public class AuditLog {
     
     public void setAiAudit(String aiAudit) {
         this.aiAudit = aiAudit;
+    }
+    
+    public Long getAuditorId() {
+        return auditorId;
+    }
+    
+    public void setAuditorId(Long auditorId) {
+        this.auditorId = auditorId;
     }
 }

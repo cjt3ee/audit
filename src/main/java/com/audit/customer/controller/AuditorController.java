@@ -41,17 +41,31 @@ public class AuditorController {
     private AuditorAuthService auditorAuthService;
 
     @PostMapping("/tasks") // 改为POST，避免敏感参数在URL中暴露
-    public ResponseEntity<ApiResponse<AuditTaskResponse>> getAuditTasks(@RequestBody Map<String, Integer> request) {
-        Integer level = request.get("level");
+    public ResponseEntity<ApiResponse<AuditTaskResponse>> getAuditTasks(@RequestBody Map<String, Object> request) {
+        Integer level = (Integer) request.get("level");
+        Long auditorId = null;
+        
+        // auditorId可能是Integer或Long类型，需要处理
+        Object auditorIdObj = request.get("auditorId");
+        if (auditorIdObj instanceof Integer) {
+            auditorId = ((Integer) auditorIdObj).longValue();
+        } else if (auditorIdObj instanceof Long) {
+            auditorId = (Long) auditorIdObj;
+        }
+        
+        if (auditorId == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("审核员ID不能为空"));
+        }
+        
         try {
-            AuditTaskResponse response = auditTaskService.assignTasksToAuditor(level);
-            logger.info("Audit tasks assigned to auditor level {}: {} tasks", level, response.getTaskCount());
+            AuditTaskResponse response = auditTaskService.assignTasksToAuditor(level, auditorId);
+            logger.info("Audit tasks assigned to auditor level {} (ID: {}): {} tasks", level, auditorId, response.getTaskCount());
             return ResponseEntity.ok(ApiResponse.success("任务获取成功", response));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid auditor level: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error getting audit tasks for auditor level: {}", level, e);
+            logger.error("Error getting audit tasks for auditor level: {} (ID: {})", level, auditorId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("服务器内部错误"));
         }
@@ -60,6 +74,7 @@ public class AuditorController {
     @GetMapping("/tasks/new")
     public ResponseEntity<ApiResponse<AuditTaskResponse>> getNewAuditTasks(
             @RequestParam Integer level,
+            @RequestParam Long auditorId,
             @RequestParam(required = false) String excludeIds) {
         try {
             // 解析排除的任务ID列表
@@ -75,8 +90,8 @@ public class AuditorController {
                 }
             }
             
-            AuditTaskResponse response = auditTaskService.assignTasksToAuditor(level, excludeTaskIds);
-            logger.info("New audit tasks assigned to auditor level {}: {} tasks", level, response.getTaskCount());
+            AuditTaskResponse response = auditTaskService.assignTasksToAuditor(level, auditorId, excludeTaskIds);
+            logger.info("New audit tasks assigned to auditor level {} (ID: {}): {} tasks", level, auditorId, response.getTaskCount());
             return ResponseEntity.ok(ApiResponse.success("新任务获取成功", response));
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid auditor level: {}", e.getMessage());
@@ -101,18 +116,19 @@ public class AuditorController {
         }
     }
     
-    @PostMapping("/release-task/{auditId}")
-    public ResponseEntity<ApiResponse<Void>> releaseAuditTask(@PathVariable Long auditId) {
+    @GetMapping("/history/{auditorId}")
+    public ResponseEntity<ApiResponse<List<AuditResultDto>>> getAuditorHistory(@PathVariable Long auditorId) {
         try {
-            auditTaskService.releaseAuditTask(auditId);
-            logger.info("Audit task released: {}", auditId);
-            return ResponseEntity.ok(ApiResponse.success("任务已释放", null));
+            List<AuditResultDto> auditorHistory = auditTaskService.getAuditorHistory(auditorId);
+            logger.info("Auditor history retrieved for auditor ID: {} with {} entries", auditorId, auditorHistory.size());
+            return ResponseEntity.ok(ApiResponse.success("审核员历史记录获取成功", auditorHistory));
         } catch (Exception e) {
-            logger.error("Error releasing audit task: {}", auditId, e);
+            logger.error("Error getting auditor history for auditor ID: {}", auditorId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("服务器内部错误"));
         }
     }
+    
     
     @PostMapping("/result")
     public ResponseEntity<ApiResponse<AuditResultSubmissionResponse>> submitAuditResult(

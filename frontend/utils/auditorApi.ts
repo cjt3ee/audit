@@ -18,13 +18,14 @@ const apiClient = axios.create({
 
 // 获取审核任务 - 将敏感参数移至请求体
 export const getAuditTasks = async (
-  auditorLevel: number
+  auditorLevel: number,
+  auditorId: number
 ): Promise<ApiResponse<AuditTaskResponse>> => {
   try {
     const response = await apiClient.post('/api/proxy', {
       path: '/api/auditor/tasks',
       method: 'POST',
-      data: { level: auditorLevel }
+      data: { level: auditorLevel, auditorId: auditorId }
     });
     return response.data;
   } catch (error) {
@@ -50,12 +51,12 @@ export const getAuditHistory = async (
   }
 };
 
-// 释放审核任务
-export const releaseAuditTask = async (
-  auditId: number
-): Promise<ApiResponse<void>> => {
+// 获取审核员历史记录
+export const getAuditorHistory = async (
+  auditorId: number
+): Promise<ApiResponse<AuditResultDto[]>> => {
   try {
-    const response = await apiClient.post(`/api/proxy?path=auditor/release-task/${auditId}`);
+    const response = await apiClient.get(`/api/proxy?path=auditor/history/${auditorId}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -225,11 +226,12 @@ export const isTaskAssigned = (auditorLevel: number, auditId: number): boolean =
 // 获取新的任务（排除已有任务）
 export const getNewAuditTasks = async (
   auditorLevel: number,
+  auditorId: number,
   excludeIds: number[]
 ): Promise<ApiResponse<AuditTaskResponse>> => {
   try {
     const excludeIdsStr = excludeIds.join(',');
-    const response = await apiClient.get(`/api/proxy?path=auditor/tasks/new&level=${auditorLevel}&excludeIds=${excludeIdsStr}`);
+    const response = await apiClient.get(`/api/proxy?path=auditor/tasks/new&level=${auditorLevel}&auditorId=${auditorId}&excludeIds=${excludeIdsStr}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -240,7 +242,7 @@ export const getNewAuditTasks = async (
 };
 
 // 获取合并的任务列表（缓存 + 新任务），确保所有任务都已正确分配
-export const getMergedTasks = async (auditorLevel: number): Promise<ApiResponse<AuditTaskResponse>> => {
+export const getMergedTasks = async (auditorLevel: number, auditorId: number): Promise<ApiResponse<AuditTaskResponse>> => {
   try {
     // 获取缓存的任务
     const cachedTasks = getCachedTasks(auditorLevel);
@@ -249,7 +251,7 @@ export const getMergedTasks = async (auditorLevel: number): Promise<ApiResponse<
     const existingTaskIds = cachedTasks.map(t => t.auditId);
     
     // 获取新的任务（排除已有任务）
-    const response = await getNewAuditTasks(auditorLevel, existingTaskIds);
+    const response = await getNewAuditTasks(auditorLevel, auditorId, existingTaskIds);
     
     if (response.success && response.data) {
       // 保存新任务到缓存
@@ -341,6 +343,23 @@ export const getRiskTypeBadgeClass = (riskType: string): string => {
       return 'badge-aggressive';
     default:
       return 'badge-moderate';
+  }
+};
+
+// 获取最大亏损承受对应的描述
+export const getMaxLossText = (maxLossCode: number | undefined): string => {
+  if (maxLossCode === undefined) return '未填写';
+  
+  switch (maxLossCode) {
+    case 1:
+    case 2:
+      return '5%以内';
+    case 3:
+      return '5-15%';
+    case 4:
+      return '30%以上';
+    default:
+      return `代码${maxLossCode}`;
   }
 };
 
