@@ -88,18 +88,25 @@ const SeniorAuditPage: React.FC = () => {
       const response = await getNewAuditTasks(2, auditorInfo.auditorId, currentTaskIds);
       
       if (response.success && response.data && response.data.tasks.length > 0) {
-        // 有新任务，显示通知
-        setNewTaskNotification("有新的审核任务，请及时处理QAQ");
+        // 根据auditId去重，过滤掉已存在的任务
+        const newTasks = response.data.tasks.filter(newTask => 
+          !currentTaskIds.includes(newTask.auditId)
+        );
         
-        // 3秒后自动隐藏通知
-        setTimeout(() => {
-          setNewTaskNotification(null);
-        }, 3000);
-        
-        // 更新任务列表
-        const updatedTasks = [...tasks, ...response.data.tasks];
-        setTasks(updatedTasks);
-        calculateStats(updatedTasks);
+        if (newTasks.length > 0) {
+          // 有新任务，显示通知
+          setNewTaskNotification("有新的审核任务，请及时处理QAQ");
+          
+          // 3秒后自动隐藏通知
+          setTimeout(() => {
+            setNewTaskNotification(null);
+          }, 3000);
+          
+          // 更新任务列表，只添加去重后的新任务
+          const updatedTasks = [...tasks, ...newTasks];
+          setTasks(updatedTasks);
+          calculateStats(updatedTasks);
+        }
       }
     } catch (error) {
       console.error('检查新任务失败:', error);
