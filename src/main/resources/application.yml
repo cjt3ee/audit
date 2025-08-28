@@ -1,5 +1,12 @@
 server:
-  port: 8080
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: classpath:ssl/audit-keystore.p12
+    key-store-password: auditpass
+    key-store-type: PKCS12
+    key-alias: audit-server
+    key-password: auditpass
 
 spring:
   application:
@@ -28,6 +35,11 @@ spring:
 audit:
   task:
     max-batch-size: 10
+
+# JWT配置
+jwt:
+  secret: audit-system-jwt-secret-key-for-sm4-encryption-2024-very-long-secret
+  expiration: 7200000  # 2小时，单位毫秒
 
 logging:
   level:

@@ -6,6 +6,7 @@ public class AuditorLoginResponse {
     private String account;
     private Integer level;
     private String levelName;
+    private String token;
     
     public AuditorLoginResponse() {}
     
@@ -46,5 +47,13 @@ public class AuditorLoginResponse {
     
     public void setLevelName(String levelName) {
         this.levelName = levelName;
+    }
+    
+    public String getToken() {
+        return token;
+    }
+    
+    public void setToken(String token) {
+        this.token = token;
     }
 }

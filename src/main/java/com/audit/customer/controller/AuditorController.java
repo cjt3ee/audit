@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auditor")
 public class AuditorController {
@@ -34,8 +36,9 @@ public class AuditorController {
     @Autowired
     private AuditorAuthService auditorAuthService;
 
-    @GetMapping("/tasks")
-    public ResponseEntity<ApiResponse<AuditTaskResponse>> getAuditTasks(@RequestParam Integer level) {
+    @PostMapping("/tasks") // 改为POST，避免敏感参数在URL中暴露
+    public ResponseEntity<ApiResponse<AuditTaskResponse>> getAuditTasks(@RequestBody Map<String, Integer> request) {
+        Integer level = request.get("level");
         try {
             AuditTaskResponse response = auditTaskService.assignTasksToAuditor(level);
             logger.info("Audit tasks assigned to auditor level {}: {} tasks", level, response.getTaskCount());

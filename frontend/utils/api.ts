@@ -24,12 +24,16 @@ export const submitQuestionnaire = async (
   }
 };
 
-// 查询审核状态
+// 查询审核状态 - 将客户ID移至请求体
 export const getAuditStatus = async (
   customerId: number
 ): Promise<ApiResponse<AuditStatusResponse>> => {
   try {
-    const response = await apiClient.get(`/api/proxy?path=customer/audit-status/${customerId}`);
+    const response = await apiClient.post('/api/proxy', {
+      path: '/api/customer/audit-status',
+      method: 'POST',
+      data: { customerId: customerId }
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

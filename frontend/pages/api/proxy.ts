@@ -1,7 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import https from 'https';
 
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://localhost:8443' 
+  : 'https://localhost:8443'; // 本地测试也使用HTTPS
+
+// 仅在开发环境下忽略SSL证书验证（用于自签名证书）
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: process.env.NODE_ENV === 'production'
+});
 
 export default async function handler(
   req: NextApiRequest,
@@ -50,7 +58,8 @@ export default async function handler(
   }
   
   try {
-    console.log(`Proxy request: ${method} ${targetUrl}`, requestData ? `with data: ${JSON.stringify(requestData).substring(0, 200)}...` : '');
+    console.log(`Proxy request: ${method} ${targetUrl}`);
+    console.log('Request data:', JSON.stringify(requestData, null, 2));
     
     const response = await axios({
       method: method as any,
@@ -59,6 +68,8 @@ export default async function handler(
       headers: {
         'Content-Type': 'application/json',
       },
+      httpsAgent,
+      timeout: 10000,
     });
     
     console.log(`Proxy response: ${response.status}`);

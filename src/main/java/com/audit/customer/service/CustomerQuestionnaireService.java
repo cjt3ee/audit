@@ -3,6 +3,7 @@ package com.audit.customer.service;
 import com.audit.customer.dto.CustomerInfoDto;
 import com.audit.customer.dto.CustomerQuestionnaireRequest;
 import com.audit.customer.dto.RiskAssessmentDto;
+import com.audit.customer.dto.UserAuditFormMessage;
 import com.audit.customer.entity.AuditLog;
 import com.audit.customer.entity.CustomerInfo;
 import com.audit.customer.entity.RiskAssessment;
@@ -15,6 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class CustomerQuestionnaireService {
 
@@ -26,6 +32,9 @@ public class CustomerQuestionnaireService {
     
     @Autowired
     private AuditLogRepository auditLogRepository;
+    
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
 
     @Transactional
     public Long createCustomerQuestionnaire(CustomerQuestionnaireRequest request) {
@@ -54,7 +63,10 @@ public class CustomerQuestionnaireService {
         riskAssessmentRepository.save(riskAssessment);
         
         // 创建审核日志记录，进入审核流程
-        createAuditLog(customerInfo.getId());
+        AuditLog auditLog = createAuditLog(customerInfo.getId());
+        
+        // 发送Kafka消息给AI处理
+        sendKafkaMessage(auditLog.getId(), customerInfo, riskAssessment, request);
         
         return customerInfo.getId();
     }
@@ -83,11 +95,70 @@ public class CustomerQuestionnaireService {
         return entity;
     }
     
-    private void createAuditLog(Long customerId) {
+    private AuditLog createAuditLog(Long customerId) {
         AuditLog auditLog = new AuditLog();
         auditLog.setCustomerId(customerId);
-        auditLog.setStatus(0); // 0未分配
+        auditLog.setStatus(5); // 5等待AI结果
         auditLog.setStage(0);  // 0初级
-        auditLogRepository.save(auditLog);
+        return auditLogRepository.save(auditLog);
+    }
+    
+    private void sendKafkaMessage(Long auditLogId, CustomerInfo customerInfo, 
+                                 RiskAssessment riskAssessment, CustomerQuestionnaireRequest request) {
+        try {
+            // 计算客户年龄（如果有生日信息可以计算，这里简化处理）
+            Integer customerAge = calculateAge(customerInfo);
+            
+            // 构建问卷答案摘要
+            Map<String, Object> questionnaireAnswers = new HashMap<>();
+            questionnaireAnswers.put("investmentExperience", riskAssessment.getInvestmentExperience());
+            questionnaireAnswers.put("investmentTarget", riskAssessment.getInvestmentTarget());
+            questionnaireAnswers.put("investmentExpire", riskAssessment.getInvestmentExpire());
+            
+            // 确定投资者类型
+            String investorType = determineInvestorType(riskAssessment.getScore());
+            
+            // 构建FormData（不包含敏感信息如姓名、身份证）
+            UserAuditFormMessage.FormData formData = new UserAuditFormMessage.FormData(
+                    riskAssessment.getScore(),
+                    investorType,
+                    riskAssessment.getInvestmentAmount().doubleValue(),
+                    riskAssessment.getAnnualIncome(),
+                    riskAssessment.getMaxLoss(),
+                    questionnaireAnswers,
+                    customerAge,
+                    customerInfo.getOccupation()
+            );
+            
+            // 构建完整消息
+            UserAuditFormMessage message = new UserAuditFormMessage(
+                    auditLogId,
+                    customerInfo.getId(),
+                    formData,
+                    LocalDateTime.now()
+            );
+            
+            // 异步发送消息
+            kafkaProducerService.sendUserAuditFormMessage(message);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send Kafka message for audit processing", e);
+        }
+    }
+    
+    private Integer calculateAge(CustomerInfo customerInfo) {
+        // 这里简化处理，实际应该根据身份证或生日计算年龄
+        // 返回一个默认年龄或null
+        return null;
+    }
+    
+    private String determineInvestorType(Integer score) {
+        if (score <= 30) {
+            return "保守型";
+        } else if (score <= 60) {
+            return "稳健型";
+        } else {
+            return "激进型";
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.audit.customer.entity;
+package com.audit.consumer.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -72,6 +72,14 @@ public class AuditLog {
         this.stage = stage;
     }
     
+    public String getAiAudit() {
+        return aiAudit;
+    }
+    
+    public void setAiAudit(String aiAudit) {
+        this.aiAudit = aiAudit;
+    }
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -86,13 +94,5 @@ public class AuditLog {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-    
-    public String getAiAudit() {
-        return aiAudit;
-    }
-    
-    public void setAiAudit(String aiAudit) {
-        this.aiAudit = aiAudit;
     }
 }

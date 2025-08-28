@@ -14,12 +14,16 @@ const apiClient = axios.create({
   },
 });
 
-// 获取审核任务
+// 获取审核任务 - 将敏感参数移至请求体
 export const getAuditTasks = async (
   auditorLevel: number
 ): Promise<ApiResponse<AuditTaskResponse>> => {
   try {
-    const response = await apiClient.get(`/api/proxy?path=auditor/tasks&level=${auditorLevel}`);
+    const response = await apiClient.post('/api/proxy', {
+      path: '/api/auditor/tasks',
+      method: 'POST',
+      data: { level: auditorLevel }
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -34,7 +38,11 @@ export const submitAuditResult = async (
   request: AuditResultSubmissionRequest
 ): Promise<ApiResponse<AuditResultSubmissionResponse>> => {
   try {
-    const response = await apiClient.post('/api/proxy?path=auditor/result', request);
+    const response = await apiClient.post('/api/proxy', {
+      path: '/api/auditor/result',
+      method: 'POST',
+      data: request
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

@@ -186,3 +186,69 @@ Task8:
 3. 修改前端生成审核员的登录界面。
 4. 添加不同等级审核员对应的前端审核界面，实现审核员登录成功后跳转到对应级别审核页面。要求遵循之前初级审核员的页面风格。
 代码必须精确、模块化。不需要生成单测。
+
+Task9:
+根据以下安全要求，加强信息安全。修改前后端代码，但是要确保本地（localhost）可测试：
+1. 用国密算法进行加密审核员登录token 
+2. 前后端通讯采用https进行通讯。（注意，我们没有合法证书，本地测试也没证书，希望能在本地测试。如果无法完成，这个可以跳过。）
+3. 敏感数据不能暴露在url中。
+4. 其他安全性修复。
+代码必须精确、模块化。不需要生成单测。
+你提升完安全性后，总结采用了哪些措施和技术。
+
+
+
+Task 10:
+你需要创建一个consumer,必要时修改pom以更新依赖。创建子文件夹。
+
+0. 为Audit Log表新增字段 aiAudit 类型为text 可选,用于存储AI生成的信息。
+
+1. 生产者：用户表单提交与 Kafka 消息发送
+触发时机：用户提交风险问卷表单并完成基础校验（信息完整、格式正确）后；
+Kafka 配置：
+主题名称：user_audit_form_topic（单一主题，简化消息路由）；
+消息结构（JSON）：包含auditLogId（关联 audit_log.id，必填）、customerId（customer_id）、formData（表单核心数据：如风险评分、投资者类型、问卷答案摘要，用户基本信息（除了名字，身份证等敏感信息））、submitTime（提交时间戳）；
+状态控制：消息发送成功后，audit_log表的status改为5（不可分配）；
+异常处理：
+消息发送失败时，重试 3 次（间隔 2s），仍失败则记录错误日志（含auditLogId和失败原因），并标记audit_log的ai_audit为 “消息发送失败，待重试”（便于后续人工介入）,此时audit_log的status改为0(可分配)；
+确保消息仅发送一次（避免重复处理），通过表单提交的幂等性校验（如基于customerId+ 提交时间戳去重）。
+
+2. 消费者：Kafka 消息处理与 AI 大模型API Key调用
+消费逻辑：消费者监听user_audit_form_topic，接收到消息后按以下步骤处理：
+参数准备：从消息中提取auditLogId和formData，验证audit_log中对应记录的status是否为 0（未分配），若已非 0 则忽略（避免重复处理）；
+AI 大模型调用： 大模型的调用采用的deepseek
+接口文档参考：
+调用 API
+DeepSeek API 使用与 OpenAI 兼容的 API 格式，通过修改配置，您可以使用 OpenAI SDK 来访问 DeepSeek API，或使用与 OpenAI API 兼容的软件。
+PARAM	VALUE
+base_url *       	https://api.deepseek.com
+api_key	apply for an API key
+* 出于与 OpenAI 兼容考虑，您也可以将 base_url 设置为 https://api.deepseek.com/v1 来使用，但注意，此处 v1 与模型版本无关。
+
+* deepseek-chat 和 deepseek-reasoner 都已经升级为 DeepSeek-V3.1。deepseek-chat 对应 DeepSeek-V3.1 的非思考模式，deepseek-reasoner 对应 DeepSeek-V3.1 的思考模式.
+
+调用对话 API
+在创建 API key 之后，你可以使用以下样例脚本的来访问 DeepSeek API。样例为非流式输出，您可以将 stream 设置为 true 来使用流式输出。
+
+curl
+python
+nodejs
+curl https://api.deepseek.com/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <DeepSeek API Key>" \
+  -d '{
+        "model": "deepseek-chat",
+        "messages": [
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": "Hello!"}
+        ],
+        "stream": false
+      }'
+调用方式：通过HTTPS 协议调用外部 AI 接口，传递formData中的必要字段（如风险评分、投资者类型、计划投资金额）；
+超时控制：设置连接超时和读取超时均为5s（超过则判定为超时）；
+结果处理与数据库更新：
+若超时（>5s）或调用异常（如 HTTPS 握手失败、接口返回 5xx/4xx 错误）：设置ai_audit = "暂时繁忙，无法生成策略"；同时修改audit log 的status更改为0。
+若调用成功：设置ai_audit = AI返回的审核策略内容（如 “建议初级审核重点关注风险评分复核”），同时修改audit log 的status更改为0；若更新失败，重试 2 次（确保最终状态一致）。
+
+注意 你需要设置kafka的参数，kafka在本地部署测试。
+代码必须精确、模块化。不需要生成单测。

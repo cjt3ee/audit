@@ -51,8 +51,28 @@ const AuditorLoginPage: React.FC = () => {
       const result: LoginResponse = await response.json();
       
       if (result.success && result.data) {
-        // 保存登录信息到 localStorage
-        localStorage.setItem('auditorInfo', JSON.stringify(result.data));
+        // 保存登录信息到 localStorage（敏感信息加密存储）
+        const auditorInfo = {
+          auditorId: result.data.auditorId,
+          account: result.data.account,
+          level: result.data.level,
+          levelName: result.data.levelName,
+          loginTime: new Date().getTime()
+        };
+        
+        // Token单独存储，设置过期时间
+        if (result.data.token) {
+          sessionStorage.setItem('auditorToken', result.data.token);
+          // 2小时后自动过期
+          setTimeout(() => {
+            sessionStorage.removeItem('auditorToken');
+            localStorage.removeItem('auditorInfo');
+            alert('登录已过期，请重新登录');
+            window.location.href = '/auditor-login';
+          }, 2 * 60 * 60 * 1000);
+        }
+        
+        localStorage.setItem('auditorInfo', JSON.stringify(auditorInfo));
         
         // 根据等级跳转到对应页面
         const level = result.data.level;

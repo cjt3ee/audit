@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/customer")
 public class CustomerQuestionnaireController {
@@ -59,8 +61,13 @@ public class CustomerQuestionnaireController {
         }
     }
     
-    @GetMapping("/audit-status/{customerId}")
-    public ResponseEntity<ApiResponse<AuditStatusResponse>> getAuditStatus(@PathVariable Long customerId) {
+    @PostMapping("/audit-status") // 改为POST，避免客户ID在URL中暴露
+    public ResponseEntity<ApiResponse<AuditStatusResponse>> getAuditStatus(@RequestBody Map<String, Long> request) {
+        Long customerId = request.get("customerId");
+        if (customerId == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("客户ID不能为空"));
+        }
+        
         try {
             AuditStatusResponse auditStatus = auditStatusService.getAuditStatus(customerId);
             logger.info("Audit status retrieved for customer ID: {}", customerId);

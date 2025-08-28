@@ -3,6 +3,7 @@ package com.audit.customer.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -14,11 +15,11 @@ public class CustomerInfoDto {
     private String name;
 
     @NotBlank(message = "手机号不能为空")
-    @Size(max = 20, message = "手机号长度不能超过20字符")
+    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
 
     @NotBlank(message = "身份证号不能为空")
-    @Size(max = 20, message = "身份证号长度不能超过20字符")
+    @Pattern(regexp = "^\\d{17}[\\dX]$", message = "身份证号格式不正确")
     private String idCard;
 
     @Email(message = "邮箱格式不正确")
