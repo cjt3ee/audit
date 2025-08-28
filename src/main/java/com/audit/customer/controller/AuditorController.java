@@ -103,18 +103,18 @@ public class AuditorController {
         }
     }
     
-    @GetMapping("/audit-history/{auditId}")
-    public ResponseEntity<ApiResponse<List<AuditResultDto>>> getAuditHistory(@PathVariable Long auditId) {
-        try {
-            List<AuditResultDto> auditHistory = auditTaskService.getAuditHistory(auditId);
-            logger.info("Audit history retrieved for audit ID: {} with {} entries", auditId, auditHistory.size());
-            return ResponseEntity.ok(ApiResponse.success("审核历史获取成功", auditHistory));
-        } catch (Exception e) {
-            logger.error("Error getting audit history for audit ID: {}", auditId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("服务器内部错误"));
-        }
-    }
+    // @GetMapping("/audit-history/{auditId}")
+    // public ResponseEntity<ApiResponse<List<AuditResultDto>>> getAuditHistory(@PathVariable Long auditId) {
+    //     try {
+    //         List<AuditResultDto> auditHistory = auditTaskService.getAuditHistory(auditId);
+    //         logger.info("Audit history retrieved for audit ID: {} with {} entries", auditId, auditHistory.size());
+    //         return ResponseEntity.ok(ApiResponse.success("审核历史获取成功", auditHistory));
+    //     } catch (Exception e) {
+    //         logger.error("Error getting audit history for audit ID: {}", auditId, e);
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(ApiResponse.error("服务器内部错误"));
+    //     }
+    // }
     
     @GetMapping("/history/{auditorId}")
     public ResponseEntity<ApiResponse<List<AuditResultDto>>> getAuditorHistory(@PathVariable Long auditorId) {
