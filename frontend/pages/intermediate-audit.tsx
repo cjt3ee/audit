@@ -28,6 +28,7 @@ const IntermediateAuditPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [auditorAuditHistory, setAuditorAuditHistory] = useState<AuditResultDto[]>([]);
   const [newTaskNotification, setNewTaskNotification] = useState<string | null>(null);
+  const [processedAuditIds, setProcessedAuditIds] = useState<Set<number>>(new Set());
   const router = useRouter();
 
   // 检查登录状态
@@ -67,6 +68,11 @@ const IntermediateAuditPage: React.FC = () => {
         setTasks(response.data.tasks);
         calculateStats(response.data.tasks);
         
+        // 将初始任务的auditId加入历史记录
+        const initialIds = new Set(processedAuditIds);
+        response.data.tasks.forEach((task: AuditTaskDto) => initialIds.add(task.auditId));
+        setProcessedAuditIds(initialIds);
+        
         // 显示获取任务的提示信息
         if (response.message && response.message.includes('新任务')) {
           console.log(response.message);
@@ -97,9 +103,18 @@ const IntermediateAuditPage: React.FC = () => {
       const response = await getNewAuditTasks(1, auditorInfo.auditorId, currentTaskIds);
       
       if (response.success && response.data && response.data.tasks.length > 0) {
-        // 根据auditId去重，过滤掉已存在的任务
-        const newTasks = response.data.tasks.filter(newTask => 
-          !currentTaskIds.includes(newTask.auditId)
+        // 先对后端返回的任务进行内部去重，确保同一审核ID只保留一个
+        const uniqueNewTasks = response.data.tasks.reduce((acc: AuditTaskDto[], current: AuditTaskDto) => {
+          const existingTask = acc.find(task => task.auditId === current.auditId);
+          if (!existingTask) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        // 过滤掉前端已存在的任务和历史处理过的任务
+        const newTasks = uniqueNewTasks.filter(newTask => 
+          !currentTaskIds.includes(newTask.auditId) && !processedAuditIds.has(newTask.auditId)
         );
         
         if (newTasks.length > 0) {
@@ -110,6 +125,11 @@ const IntermediateAuditPage: React.FC = () => {
           setTimeout(() => {
             setNewTaskNotification(null);
           }, 3000);
+          
+          // 更新历史处理记录
+          const newProcessedIds = new Set(processedAuditIds);
+          newTasks.forEach(task => newProcessedIds.add(task.auditId));
+          setProcessedAuditIds(newProcessedIds);
           
           // 更新任务列表，只添加去重后的新任务
           const updatedTasks = [...tasks, ...newTasks];
@@ -287,7 +307,7 @@ const IntermediateAuditPage: React.FC = () => {
   // 设置定时轮询新任务（仅在当前任务标签页且有审核员信息时）
   useEffect(() => {
     if (auditorInfo && activeTab === 'current') {
-      const interval = setInterval(checkForNewTasks, 30000); // 30秒轮询一次
+      const interval = setInterval(checkForNewTasks, 15000); // 15秒轮询一次
       return () => clearInterval(interval);
     }
   }, [auditorInfo, activeTab, tasks]);
