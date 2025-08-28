@@ -65,13 +65,21 @@ const SeniorAuditPage: React.FC = () => {
     try {
       const response = await getMergedTasks(2, auditorInfo.auditorId); // 传递审核员ID
       if (response.success && response.data) {
-        setTasks(response.data.tasks);
-        calculateStats(response.data.tasks);
+        // 对获取的任务进行去重，确保不与当前任务列表重复
+        const currentTaskIds = tasks.map(task => task.auditId);
+        const uniqueTasks = response.data.tasks.filter((newTask: AuditTaskDto) => 
+          !currentTaskIds.includes(newTask.auditId)
+        );
         
-        // 将初始任务的auditId加入历史记录
-        const initialIds = new Set(processedAuditIds);
-        response.data.tasks.forEach((task: AuditTaskDto) => initialIds.add(task.auditId));
-        setProcessedAuditIds(initialIds);
+        // 合并当前任务和新的唯一任务
+        const allTasks = [...tasks, ...uniqueTasks];
+        setTasks(allTasks);
+        calculateStats(allTasks);
+        
+        // 将新任务的auditId加入历史记录
+        const updatedIds = new Set(processedAuditIds);
+        uniqueTasks.forEach((task: AuditTaskDto) => updatedIds.add(task.auditId));
+        setProcessedAuditIds(updatedIds);
         
         // 显示获取任务的提示信息
         if (response.message && response.message.includes('新任务')) {
