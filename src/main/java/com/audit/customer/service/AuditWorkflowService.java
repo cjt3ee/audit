@@ -38,7 +38,16 @@ public class AuditWorkflowService {
         AuditLog auditLog = auditLogOpt.get();
         
         // 验证审核流程状态
-        if (auditLog.getStatus() != 1) {
+        if (auditLog.getStatus() == 0) {
+            // 如果状态为0，说明任务还没有被分配给当前审核员，尝试分配
+            int updatedCount = auditLogRepository.updateStatusByIds(
+                java.util.Arrays.asList(auditLog.getId()), 1, 0);
+            if (updatedCount == 0) {
+                throw new IllegalStateException("任务分配失败，可能已被其他审核员获取");
+            }
+            // 更新本地对象状态
+            auditLog.setStatus(1);
+        } else if (auditLog.getStatus() != 1) {
             throw new IllegalStateException("审核流程状态不正确，当前状态: " + auditLog.getStatus());
         }
         
@@ -106,7 +115,7 @@ public class AuditWorkflowService {
     }
     
     private WorkflowDecision handleJuniorAuditorDecision(RiskType riskType) {
-        // 初级审核员：所有类型都转给中级
+        // 初级审核员：所有类型都转给中级，状态设为0等待中级审核员分配
         return new WorkflowDecision(0, 1, false, "初级审核通过，转交中级审核员");
     }
     
@@ -115,7 +124,7 @@ public class AuditWorkflowService {
             case CONSERVATIVE: // 保守型客户，中级审核员可以做最终决定
                 return new WorkflowDecision(3, null, true, "中级审核员审核完成，保守型客户流程结束");
             case BALANCED:
-            case AGGRESSIVE: // 稳健型和激进型转给高级
+            case AGGRESSIVE: // 稳健型和激进型转给高级，状态设为0等待高级审核员分配
                 return new WorkflowDecision(0, 2, false, "中级审核通过，转交高级审核员");
             default:
                 throw new IllegalStateException("未知的风险类型: " + riskType);
@@ -126,7 +135,7 @@ public class AuditWorkflowService {
         switch (riskType) {
             case BALANCED: // 稳健型客户，高级审核员可以做最终决定
                 return new WorkflowDecision(3, null, true, "高级审核员审核完成，稳健型客户流程结束");
-            case AGGRESSIVE: // 激进型转给投资委员会
+            case AGGRESSIVE: // 激进型转给投资委员会，状态设为0等待委员会分配
                 return new WorkflowDecision(0, 3, false, "高级审核通过，激进型客户转交投资委员会");
             default:
                 throw new IllegalStateException("高级审核员不应处理保守型客户");
