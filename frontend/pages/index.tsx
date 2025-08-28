@@ -201,6 +201,339 @@ const CustomerPage = () => {
         <title>银行投资风险审核系统</title>
         <meta name="description" content="为客户提供专业的投资风险评估和审核服务" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style jsx>{`
+          /* 投资建议主要布局 */
+          .investment-advice-section {
+            margin-top: 40px;
+            background: #fafbfc;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #e8eef5;
+          }
+          
+          .advice-header {
+            margin-bottom: 30px;
+          }
+          
+          .advice-title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-weight: 600;
+          }
+          
+          .risk-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          }
+          
+          .risk-label {
+            font-size: 16px;
+            color: #666;
+            font-weight: 500;
+          }
+          
+          .risk-score-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            background: #f0f4ff;
+            padding: 8px 16px;
+            border-radius: 50px;
+            min-width: 60px;
+            text-align: center;
+          }
+          
+          .risk-type-text {
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+          }
+
+          /* 推荐组合部分 */
+          .recommended-portfolio-section {
+            margin-top: 30px;
+          }
+          
+          .recommended-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-weight: 600;
+          }
+
+          /* 特色投资组合 */
+          .featured-portfolio {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+            overflow: hidden;
+            transition: all 0.3s ease;
+          }
+
+          .featured-portfolio:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+          }
+
+          .featured-portfolio.conservative {
+            border-color: #4CAF50;
+          }
+
+          .featured-portfolio.moderate {
+            border-color: #FF9800;
+          }
+
+          .featured-portfolio.aggressive {
+            border-color: #F44336;
+          }
+
+          .portfolio-header-featured {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #e9ecef;
+          }
+
+          .portfolio-info h3 {
+            font-size: 22px;
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-weight: 600;
+          }
+
+          .portfolio-tags {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+          }
+
+          .risk-tag, .return-tag {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+
+          .risk-tag.conservative {
+            background: #e8f5e8;
+            color: #2e7d32;
+          }
+
+          .risk-tag.moderate {
+            background: #fff3e0;
+            color: #ef6c00;
+          }
+
+          .risk-tag.aggressive {
+            background: #ffebee;
+            color: #c62828;
+          }
+
+          .return-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #bbdefb;
+          }
+
+          .recommended-badge {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+          }
+
+          .portfolio-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+          }
+
+          .allocation-section h5, .portfolio-features h5 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-weight: 600;
+            border-bottom: 2px solid #f0f4ff;
+            padding-bottom: 8px;
+          }
+
+          .allocation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+          }
+
+          .allocation-item-clean {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+          }
+
+          .allocation-item-clean:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+          }
+
+          .asset-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+          }
+
+          .asset-name {
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+          }
+
+          .asset-percent {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+          }
+
+          .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+          }
+
+          .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+          }
+
+          .progress-fill.conservative {
+            background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
+          }
+
+          .progress-fill.moderate {
+            background: linear-gradient(90deg, #FF9800 0%, #FFB74D 100%);
+          }
+
+          .progress-fill.aggressive {
+            background: linear-gradient(90deg, #F44336 0%, #EF5350 100%);
+          }
+
+          .portfolio-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+
+          .portfolio-features li {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #495057;
+            border-bottom: 1px solid #f0f0f0;
+          }
+
+          .portfolio-features li:last-child {
+            border-bottom: none;
+          }
+
+          /* 免责声明 */
+          .investment-disclaimer {
+            margin-top: 30px;
+            background: white;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            overflow: hidden;
+          }
+
+          .disclaimer-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffeaa7;
+            padding: 15px 20px;
+          }
+
+          .disclaimer-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 600;
+          }
+
+          .disclaimer-icon {
+            font-size: 18px;
+          }
+
+          .disclaimer-content {
+            padding: 20px;
+          }
+
+          .disclaimer-content p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+          }
+
+          .disclaimer-content p:last-child {
+            margin-bottom: 0;
+          }
+
+          /* 响应式设计 */
+          @media (max-width: 768px) {
+            .investment-advice-section {
+              padding: 20px;
+              margin-top: 20px;
+            }
+            
+            .risk-summary {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 10px;
+            }
+
+            .portfolio-content {
+              grid-template-columns: 1fr;
+              gap: 20px;
+              padding: 20px;
+            }
+
+            .portfolio-header-featured {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 15px;
+              padding: 20px;
+            }
+
+            .portfolio-tags {
+              align-self: stretch;
+              justify-content: space-between;
+            }
+
+            .recommended-badge {
+              align-self: flex-end;
+            }
+          }
+        `}</style>
       </Head>
 
       <div className="header">
@@ -527,6 +860,255 @@ const CustomerPage = () => {
                           );
                         })()}
                       </div>
+                      
+                      {/* 投资建议部分 */}
+                      {auditResult.status === 'completed' && (() => {
+                        // 获取最后一个审核结果的风险评分
+                        const lastResult = auditResult.results[auditResult.results.length - 1];
+                        const finalScore = lastResult.riskScore;
+                        
+                        // 确定推荐的投资类型
+                        let recommendedType = '';
+                        if (finalScore <= 40) recommendedType = 'conservative';
+                        else if (finalScore <= 70) recommendedType = 'moderate';
+                        else recommendedType = 'aggressive';
+                        
+                        return (
+                          <div className="investment-advice-section">
+                            <div className="advice-header">
+                              <h3 className="advice-title">💼 个性化投资建议</h3>
+                              <div className="risk-summary">
+                                <span className="risk-label">您的风险评分：</span>
+                                <span className="risk-score-value">{finalScore}</span>
+                                <span className="risk-type-text">
+                                  {finalScore <= 40 ? '保守型投资者' : 
+                                   finalScore <= 70 ? '稳健型投资者' : '激进型投资者'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 推荐组合突出显示 */}
+                            <div className="recommended-portfolio-section">
+                              <h4 className="recommended-title">🎯 为您量身定制的投资组合</h4>
+                              
+                              {recommendedType === 'conservative' && (
+                                <div className="featured-portfolio conservative">
+                                  <div className="portfolio-header-featured">
+                                    <div className="portfolio-info">
+                                      <h3>保守型组合</h3>
+                                      <div className="portfolio-tags">
+                                        <span className="risk-tag conservative">低风险</span>
+                                        <span className="return-tag">4-6% 年化收益</span>
+                                      </div>
+                                    </div>
+                                    <div className="recommended-badge">推荐</div>
+                                  </div>
+                                  <div className="portfolio-content">
+                                    <div className="allocation-section">
+                                      <h5>资产配置比例</h5>
+                                      <div className="allocation-list">
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">货币基金</span>
+                                            <span className="asset-percent">40%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill conservative" style={{ width: '40%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">国债</span>
+                                            <span className="asset-percent">30%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill conservative" style={{ width: '30%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">银行理财</span>
+                                            <span className="asset-percent">20%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill conservative" style={{ width: '20%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">债券基金</span>
+                                            <span className="asset-percent">10%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill conservative" style={{ width: '10%' }}></div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="portfolio-features">
+                                      <h5>组合特点</h5>
+                                      <ul>
+                                        <li>✓ 本金安全性高</li>
+                                        <li>✓ 收益稳定可预期</li>
+                                        <li>✓ 流动性较好</li>
+                                        <li>✓ 适合保值增值</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {recommendedType === 'moderate' && (
+                                <div className="featured-portfolio moderate">
+                                  <div className="portfolio-header-featured">
+                                    <div className="portfolio-info">
+                                      <h3>稳健型组合</h3>
+                                      <div className="portfolio-tags">
+                                        <span className="risk-tag moderate">中风险</span>
+                                        <span className="return-tag">6-10% 年化收益</span>
+                                      </div>
+                                    </div>
+                                    <div className="recommended-badge">推荐</div>
+                                  </div>
+                                  <div className="portfolio-content">
+                                    <div className="allocation-section">
+                                      <h5>资产配置比例</h5>
+                                      <div className="allocation-list">
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">混合基金</span>
+                                            <span className="asset-percent">35%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill moderate" style={{ width: '35%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">债券基金</span>
+                                            <span className="asset-percent">25%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill moderate" style={{ width: '25%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">优质股票</span>
+                                            <span className="asset-percent">25%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill moderate" style={{ width: '25%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">货币基金</span>
+                                            <span className="asset-percent">15%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill moderate" style={{ width: '15%' }}></div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="portfolio-features">
+                                      <h5>组合特点</h5>
+                                      <ul>
+                                        <li>✓ 风险收益平衡</li>
+                                        <li>✓ 长期增值潜力</li>
+                                        <li>✓ 分散投资风险</li>
+                                        <li>✓ 适合稳健增长</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {recommendedType === 'aggressive' && (
+                                <div className="featured-portfolio aggressive">
+                                  <div className="portfolio-header-featured">
+                                    <div className="portfolio-info">
+                                      <h3>激进型组合</h3>
+                                      <div className="portfolio-tags">
+                                        <span className="risk-tag aggressive">高风险</span>
+                                        <span className="return-tag">10-15% 年化收益</span>
+                                      </div>
+                                    </div>
+                                    <div className="recommended-badge">推荐</div>
+                                  </div>
+                                  <div className="portfolio-content">
+                                    <div className="allocation-section">
+                                      <h5>资产配置比例</h5>
+                                      <div className="allocation-list">
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">成长股票</span>
+                                            <span className="asset-percent">50%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill aggressive" style={{ width: '50%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">科技基金</span>
+                                            <span className="asset-percent">25%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill aggressive" style={{ width: '25%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">新兴市场</span>
+                                            <span className="asset-percent">15%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill aggressive" style={{ width: '15%' }}></div>
+                                          </div>
+                                        </div>
+                                        <div className="allocation-item-clean">
+                                          <div className="asset-info">
+                                            <span className="asset-name">债券基金</span>
+                                            <span className="asset-percent">10%</span>
+                                          </div>
+                                          <div className="progress-bar">
+                                            <div className="progress-fill aggressive" style={{ width: '10%' }}></div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="portfolio-features">
+                                      <h5>组合特点</h5>
+                                      <ul>
+                                        <li>✓ 高成长潜力</li>
+                                        <li>✓ 积极追求收益</li>
+                                        <li>✓ 长期投资导向</li>
+                                        <li>✓ 适合高风险偏好</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 重要提示 */}
+                            <div className="investment-disclaimer">
+                              <div className="disclaimer-header">
+                                <span className="disclaimer-icon">⚠️</span>
+                                <h4>重要提示</h4>
+                              </div>
+                              <div className="disclaimer-content">
+                                <p>• 以上投资组合建议仅供参考，请结合个人实际情况谨慎投资</p>
+                                <p>• 投资有风险，过往业绩不代表未来收益表现</p>
+                                <p>• 建议定期回顾并调整投资组合以适应市场变化</p>
+                                <p>• 如需专业投资建议，欢迎咨询我行理财顾问团队</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

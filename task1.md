@@ -324,3 +324,11 @@ Task16:
 
 修改一下src\main\java\com\audit\customer\controller\AuditorController.java的@GetMapping("/history/{auditorId}")
 添加一个回传字段，后端需要把audit_id传递给前端，同时前端显示审核流程ID:{audit_id}
+
+Task17:
+现在，针对审核前端，需要在前端维护一个定时轮询，用来提醒审核员新任务到达，你选择一个合适的定时周期，周期轮询调用auditor/tasks/new。如果检测到了新任务，则会在前端有一个通知："有新的审核任务，请及时处理QAQ"。后端不要修改。
+注意你需要修改初级 中级 高级 审核委员会四个审核员前端页面。
+
+Task18:
+参考 frontend\demo\for_customer.html 中投资建议栏目。
+在客户审核结果查询中，如果审核结束，有审核结果，则根据审核结果给出相应投资建议。要求和frontend\demo\for_customer.html 中投资建议相似。

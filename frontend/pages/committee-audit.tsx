@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getMergedTasks, submitAuditResult, getAuditHistory, getAuditorHistory, removeCompletedTask, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm, getMaxLossText } from '../utils/auditorApi';
+import { getMergedTasks, submitAuditResult, getAuditHistory, getAuditorHistory, removeCompletedTask, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm, getMaxLossText, getNewAuditTasks } from '../utils/auditorApi';
 import { AuditTaskDto, AuditForm, AuditResultDto } from '../types/auditor';
 
 const CommitteeAuditPage: React.FC = () => {
@@ -27,6 +27,7 @@ const CommitteeAuditPage: React.FC = () => {
   const [showDetailedInfo, setShowDetailedInfo] = useState(false);
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [auditorAuditHistory, setAuditorAuditHistory] = useState<AuditResultDto[]>([]);
+  const [newTaskNotification, setNewTaskNotification] = useState<string | null>(null);
   const router = useRouter();
 
   // 检查登录状态
@@ -75,6 +76,33 @@ const CommitteeAuditPage: React.FC = () => {
       console.error('获取任务失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 轮询检查新任务
+  const checkForNewTasks = async () => {
+    if (!auditorInfo) return;
+    
+    try {
+      const currentTaskIds = tasks.map(task => task.auditId);
+      const response = await getNewAuditTasks(3, auditorInfo.auditorId, currentTaskIds);
+      
+      if (response.success && response.data && response.data.tasks.length > 0) {
+        // 有新任务，显示通知
+        setNewTaskNotification("有新的审核任务，请及时处理QAQ");
+        
+        // 3秒后自动隐藏通知
+        setTimeout(() => {
+          setNewTaskNotification(null);
+        }, 3000);
+        
+        // 更新任务列表
+        const updatedTasks = [...tasks, ...response.data.tasks];
+        setTasks(updatedTasks);
+        calculateStats(updatedTasks);
+      }
+    } catch (error) {
+      console.error('检查新任务失败:', error);
     }
   };
 
@@ -249,6 +277,14 @@ const CommitteeAuditPage: React.FC = () => {
     }
   }, [auditorInfo, activeTab]);
 
+  // 设置定时轮询新任务（仅在当前任务标签页且有审核员信息时）
+  useEffect(() => {
+    if (auditorInfo && activeTab === 'current') {
+      const interval = setInterval(checkForNewTasks, 30000); // 30秒轮询一次
+      return () => clearInterval(interval);
+    }
+  }, [auditorInfo, activeTab, tasks]);
+
   if (!auditorInfo) {
     return (
       <div style={{ 
@@ -295,6 +331,27 @@ const CommitteeAuditPage: React.FC = () => {
           退出登录
         </button>
       </div>
+
+      {/* 新任务通知 */}
+      {newTaskNotification && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#4CAF50',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 1000,
+          fontSize: '16px',
+          fontWeight: 'bold',
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {newTaskNotification}
+        </div>
+      )}
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         {/* 选项卡 */}
