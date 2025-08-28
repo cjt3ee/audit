@@ -7,7 +7,7 @@ public class AuditStatusResponse {
     private Long customerId;
     private String status;
     private String message;
-    private List<Integer> results;
+    private List<AuditResultDto> results;
     
     public AuditStatusResponse() {}
     
@@ -17,7 +17,7 @@ public class AuditStatusResponse {
         this.message = message;
     }
     
-    public AuditStatusResponse(Long customerId, String status, String message, List<Integer> results) {
+    public AuditStatusResponse(Long customerId, String status, String message, List<AuditResultDto> results) {
         this.customerId = customerId;
         this.status = status;
         this.message = message;
@@ -48,11 +48,11 @@ public class AuditStatusResponse {
         this.message = message;
     }
     
-    public List<Integer> getResults() {
+    public List<AuditResultDto> getResults() {
         return results;
     }
     
-    public void setResults(List<Integer> results) {
+    public void setResults(List<AuditResultDto> results) {
         this.results = results;
     }
 }

@@ -1,5 +1,6 @@
 package com.audit.customer.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class AuditTaskDto {
@@ -12,11 +13,13 @@ public class AuditTaskDto {
     private Integer riskScore;
     private String riskType;
     private LocalDateTime createdAt;
+    private BigDecimal investAmount;
     
     public AuditTaskDto() {}
     
     public AuditTaskDto(Long auditId, Long customerId, String customerName, String customerPhone, 
-                       Integer stage, Integer riskScore, String riskType, LocalDateTime createdAt) {
+                       Integer stage, Integer riskScore, String riskType, LocalDateTime createdAt, 
+                       BigDecimal investAmount) {
         this.auditId = auditId;
         this.customerId = customerId;
         this.customerName = customerName;
@@ -25,6 +28,7 @@ public class AuditTaskDto {
         this.riskScore = riskScore;
         this.riskType = riskType;
         this.createdAt = createdAt;
+        this.investAmount = investAmount;
     }
     
     public Long getAuditId() {
@@ -89,5 +93,13 @@ public class AuditTaskDto {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public BigDecimal getInvestAmount() {
+        return investAmount;
+    }
+    
+    public void setInvestAmount(BigDecimal investAmount) {
+        this.investAmount = investAmount;
     }
 }

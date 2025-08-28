@@ -24,6 +24,17 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                                                            @Param("status") Integer status, 
                                                            Pageable pageable);
     
+    @Query("SELECT al FROM AuditLog al WHERE al.stage = :stage AND al.status IN :statusList ORDER BY al.createdAt ASC")
+    List<AuditLog> findByStageAndStatusInOrderByCreatedAtAsc(@Param("stage") Integer stage, 
+                                                             @Param("statusList") List<Integer> statusList, 
+                                                             Pageable pageable);
+    
+    @Query("SELECT al FROM AuditLog al WHERE al.stage = :stage AND al.status = :status AND al.id NOT IN :excludeIds ORDER BY al.createdAt ASC")
+    List<AuditLog> findByStageAndStatusAndIdNotInOrderByCreatedAtAsc(@Param("stage") Integer stage, 
+                                                                     @Param("status") Integer status,
+                                                                     @Param("excludeIds") List<Long> excludeIds, 
+                                                                     Pageable pageable);
+    
     @Modifying
     @Query("UPDATE AuditLog al SET al.status = :newStatus WHERE al.id IN :auditIds AND al.status = :oldStatus")
     int updateStatusByIds(@Param("auditIds") List<Long> auditIds, 

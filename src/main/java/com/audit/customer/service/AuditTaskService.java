@@ -1,14 +1,19 @@
 package com.audit.customer.service;
 
+import com.audit.customer.dto.AuditResultDto;
 import com.audit.customer.dto.AuditTaskDto;
 import com.audit.customer.dto.AuditTaskResponse;
 import com.audit.customer.entity.AuditLog;
 import com.audit.customer.entity.CustomerInfo;
 import com.audit.customer.entity.RiskAssessment;
+import com.audit.customer.entity.RiskAssessmentResult;
 import com.audit.customer.enums.RiskType;
 import com.audit.customer.repository.AuditLogRepository;
 import com.audit.customer.repository.CustomerInfoRepository;
 import com.audit.customer.repository.RiskAssessmentRepository;
+import com.audit.customer.repository.RiskAssessmentResultRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class AuditTaskService {
     
+    private static final Logger logger = LoggerFactory.getLogger(AuditTaskService.class);
+    
     @Autowired
     private AuditLogRepository auditLogRepository;
     
@@ -33,20 +40,35 @@ public class AuditTaskService {
     @Autowired
     private RiskAssessmentRepository riskAssessmentRepository;
     
+    @Autowired
+    private RiskAssessmentResultRepository riskAssessmentResultRepository;
+    
     @Value("${audit.task.max-batch-size:10}")
     private int maxBatchSize;
     
     @Transactional
     public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel) {
+        return assignTasksToAuditor(auditorLevel, null);
+    }
+    
+    @Transactional
+    public AuditTaskResponse assignTasksToAuditor(Integer auditorLevel, List<Long> excludeTaskIds) {
         // 验证审核员等级
         if (auditorLevel < 0 || auditorLevel > 3) {
             throw new IllegalArgumentException("审核员等级必须在0-3之间");
         }
         
-        // 获取待分配的任务
+        // 获取待分配的任务，可选择性排除已分配的任务
         Pageable pageable = PageRequest.of(0, maxBatchSize);
-        List<AuditLog> availableTasks = auditLogRepository.findByStageAndStatusOrderByCreatedAtAsc(
-                auditorLevel, 0, pageable);
+        List<AuditLog> availableTasks;
+        
+        if (excludeTaskIds == null || excludeTaskIds.isEmpty()) {
+            availableTasks = auditLogRepository.findByStageAndStatusOrderByCreatedAtAsc(
+                    auditorLevel, 0, pageable);
+        } else {
+            availableTasks = auditLogRepository.findByStageAndStatusAndIdNotInOrderByCreatedAtAsc(
+                    auditorLevel, 0, excludeTaskIds, pageable);
+        }
         
         if (availableTasks.isEmpty()) {
             return new AuditTaskResponse(auditorLevel, new ArrayList<>());
@@ -112,12 +134,36 @@ public class AuditTaskService {
                         auditLog.getStage(),
                         risk.getScore(),
                         riskTypeDescription,
-                        auditLog.getCreatedAt()
+                        auditLog.getCreatedAt(),
+                        customer.getInvestAmount()
                 );
                 taskDtos.add(taskDto);
             }
         }
         
         return taskDtos;
+    }
+    
+    public List<AuditResultDto> getAuditHistory(Long auditId) {
+        List<RiskAssessmentResult> results = riskAssessmentResultRepository.findByAuditIdOrderByStageAsc(auditId);
+        
+        return results.stream()
+                .map(result -> new AuditResultDto(
+                        result.getStage(),
+                        result.getRiskScore(), 
+                        result.getOpinion(),
+                        result.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+    
+    @Transactional
+    public void releaseAuditTask(Long auditId) {
+        // 将任务状态从1(进行中)改回0(未开始)，只有状态为1的才能释放
+        int updatedCount = auditLogRepository.updateStatusByIds(List.of(auditId), 0, 1);
+        if (updatedCount > 0) {
+            logger.info("Released audit task with ID: {} (status: 1 -> 0)", auditId);
+        } else {
+            logger.warn("Failed to release audit task with ID: {} (task may not be in progress)", auditId);
+        }
     }
 }

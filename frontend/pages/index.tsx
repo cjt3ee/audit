@@ -94,7 +94,7 @@ const CustomerPage = () => {
     // 必填字段验证
     if (!formData.name.trim()) errors.name = '请输入姓名';
     if (!formData.phone.trim()) errors.phone = '请输入手机号';
-    else if (!/^1[3-9]\d{9}$/.test(formData.phone)) errors.phone = '请输入正确的手机号格式';
+    else if (!/^1[0-9]\d{9}$/.test(formData.phone)) errors.phone = '请输入正确的手机号格式';
     
     if (!formData.idCard.trim()) errors.idCard = '请输入身份证号';
     else if (!/^\d{17}[\dX]$/.test(formData.idCard)) errors.idCard = '请输入正确的身份证号格式';

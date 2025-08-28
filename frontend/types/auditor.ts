@@ -11,6 +11,14 @@ export interface AuditTaskDto {
   investAmount?: number;
 }
 
+// 审核结果历史记录
+export interface AuditResultDto {
+  stage: number;
+  riskScore: number;
+  opinion: string;
+  createdAt: string;
+}
+
 export interface AuditTaskResponse {
   auditorLevel: number;
   taskCount: number;

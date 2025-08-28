@@ -1,6 +1,7 @@
 package com.audit.customer.service;
 
 import com.audit.customer.dto.AuditStatusResponse;
+import com.audit.customer.dto.AuditResultDto;
 import com.audit.customer.entity.AuditLog;
 import com.audit.customer.entity.RiskAssessmentResult;
 import com.audit.customer.repository.AuditLogRepository;
@@ -8,6 +9,7 @@ import com.audit.customer.repository.RiskAssessmentResultRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -55,7 +57,8 @@ public class AuditStatusService {
         
         // 根据最终风险评分确定风险类型
         Integer riskTypeCode = mapRiskScoreToType(finalRiskScore.get());
-        List<Integer> results = Arrays.asList(riskTypeCode);
+        AuditResultDto result = new AuditResultDto(riskTypeCode, finalRiskScore.get(), "审核完成", LocalDateTime.now());
+        List<AuditResultDto> results = Arrays.asList(result);
         
         return new AuditStatusResponse(customerId, "completed", "审核已完成", results);
     }

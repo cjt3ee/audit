@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getAuditTasks, submitAuditResult, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm } from '../utils/auditorApi';
+import { getMergedTasks, submitAuditResult, releaseAuditTask, removeCompletedTask, formatPhone, formatDateTime, getRiskTypeBadgeClass, getStageText, validateAuditForm } from '../utils/auditorApi';
 import { AuditTaskDto, AuditForm } from '../types/auditor';
 
 const JuniorAuditPage: React.FC = () => {
@@ -22,6 +22,7 @@ const JuniorAuditPage: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [showDetailedInfo, setShowDetailedInfo] = useState(false);
   const router = useRouter();
 
   // 检查登录状态
@@ -50,16 +51,21 @@ const JuniorAuditPage: React.FC = () => {
     }
   };
 
-  // 获取审核任务
+  // 获取审核任务（使用本地缓存 + 新任务合并机制）
   const fetchTasks = async () => {
     if (!auditorInfo) return;
     
     setLoading(true);
     try {
-      const response = await getAuditTasks(0); // 初级审核员级别为0
+      const response = await getMergedTasks(0); // 初级审核员级别为0
       if (response.success && response.data) {
         setTasks(response.data.tasks);
         calculateStats(response.data.tasks);
+        
+        // 显示获取任务的提示信息
+        if (response.message && response.message.includes('新任务')) {
+          console.log(response.message);
+        }
       }
     } catch (error) {
       console.error('获取任务失败:', error);
@@ -93,8 +99,8 @@ const JuniorAuditPage: React.FC = () => {
     setFormErrors([]);
   };
 
-  // 取消审核
-  const cancelAudit = () => {
+  // 返回列表（不释放任务）
+  const backToList = () => {
     setSelectedTask(null);
     setAuditForm({
       auditId: 0,
@@ -103,6 +109,38 @@ const JuniorAuditPage: React.FC = () => {
       opinion: ''
     });
     setFormErrors([]);
+  };
+
+  // 真正取消审核（释放任务）
+  const cancelAudit = async () => {
+    if (!selectedTask) return;
+    
+    const confirmCancel = confirm('确定要取消此审核任务吗？取消后任务将释放给其他审核员处理。');
+    if (!confirmCancel) return;
+    
+    try {
+      await releaseAuditTask(selectedTask.auditId);
+      
+      // 从本地缓存中移除该任务
+      removeCompletedTask(0, selectedTask.auditId);
+      
+      // 重新加载任务列表
+      await fetchTasks();
+      
+      setSelectedTask(null);
+      setAuditForm({
+        auditId: 0,
+        approved: true,
+        riskScore: 50,
+        opinion: ''
+      });
+      setFormErrors([]);
+      
+      alert('任务已取消并释放');
+    } catch (error) {
+      console.error('取消任务失败:', error);
+      alert('取消任务失败，请重试');
+    }
   };
 
   // 提交审核结果
@@ -138,7 +176,12 @@ const JuniorAuditPage: React.FC = () => {
       
       if (response.success) {
         alert(`审核结果提交成功！\n状态：${response.data?.workflowStatus || '已处理'}\n${response.data?.message || ''}`);
-        cancelAudit();
+        
+        // 从本地缓存中移除已完成的任务
+        removeCompletedTask(0, auditForm.auditId);
+        
+        // 返回列表并重新加载任务
+        backToList();
         fetchTasks();
       } else {
         alert('提交失败：' + response.message);
@@ -408,21 +451,46 @@ const JuniorAuditPage: React.FC = () => {
                 }}>
                   初级审核详情
                 </h2>
-                <button
-                  onClick={cancelAudit}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    background: '#f0f0f0',
-                    color: '#333',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  返回列表
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={backToList}
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      background: '#f0f0f0',
+                      color: '#333',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    返回列表
+                  </button>
+                  <button
+                    onClick={cancelAudit}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid #f44336',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      background: 'white',
+                      color: '#f44336',
+                      transition: 'all 0.3s'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = '#f44336';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.color = '#f44336';
+                    }}
+                  >
+                    取消任务
+                  </button>
+                </div>
               </div>
 
               {/* 客户信息 */}
@@ -433,7 +501,41 @@ const JuniorAuditPage: React.FC = () => {
                 marginBottom: '20px',
                 borderLeft: '4px solid #667eea'
               }}>
-                <h3 style={{ marginBottom: '15px' }}>客户信息</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0 }}>客户信息</h3>
+                  <button
+                    onClick={() => setShowDetailedInfo(!showDetailedInfo)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #667eea',
+                      color: '#667eea',
+                      padding: '6px 12px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      transition: 'all 0.3s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = '#667eea';
+                      e.currentTarget.style.color = 'white';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'none';
+                      e.currentTarget.style.color = '#667eea';
+                    }}
+                  >
+                    <span>{showDetailedInfo ? '收起详情' : '展开详情'}</span>
+                    <span style={{ 
+                      transform: showDetailedInfo ? 'rotate(180deg)' : 'rotate(0deg)', 
+                      transition: 'transform 0.3s' 
+                    }}>
+                      ▼
+                    </span>
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '15px' }}>
                   <div>
                     <strong>客户姓名：</strong>{selectedTask.customerName}
@@ -457,13 +559,80 @@ const JuniorAuditPage: React.FC = () => {
                   <div>
                     <strong>当前评分：</strong>{selectedTask.riskScore}分
                   </div>
-                  <div>
-                    <strong>审核阶段：</strong>{getStageText(selectedTask.stage)}
-                  </div>
-                  <div>
-                    <strong>提交时间：</strong>{formatDateTime(selectedTask.createdAt)}
-                  </div>
+                  {!showDetailedInfo && (
+                    <>
+                      <div>
+                        <strong>审核阶段：</strong>{getStageText(selectedTask.stage)}
+                      </div>
+                      <div>
+                        <strong>提交时间：</strong>{formatDateTime(selectedTask.createdAt)}
+                      </div>
+                    </>
+                  )}
                 </div>
+                
+                {/* 详细信息展开区域 */}
+                {showDetailedInfo && (
+                  <div style={{
+                    marginTop: '15px',
+                    padding: '15px',
+                    background: 'white',
+                    borderRadius: '6px',
+                    border: '1px solid #e0e0e0',
+                    animation: 'slideDown 0.3s ease-out'
+                  }}>
+                    <h4 style={{ marginTop: '0', marginBottom: '12px', color: '#667eea' }}>详细表单信息</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '14px' }}>
+                      <div>
+                        <strong>审核ID：</strong>
+                        <span style={{ color: '#666' }}>#{selectedTask.auditId}</span>
+                      </div>
+                      <div>
+                        <strong>客户ID：</strong>
+                        <span style={{ color: '#666' }}>{selectedTask.customerId}</span>
+                      </div>
+                      <div>
+                        <strong>审核阶段：</strong>
+                        <span style={{ color: '#667eea', fontWeight: 'bold' }}>{getStageText(selectedTask.stage)}</span>
+                      </div>
+                      <div>
+                        <strong>投资金额：</strong>
+                        <span style={{ color: '#f44336', fontWeight: 'bold' }}>
+                          {selectedTask.investAmount ? `¥${(selectedTask.investAmount / 10000).toFixed(1)}万` : '未填写'}
+                        </span>
+                      </div>
+                      <div>
+                        <strong>申请时间：</strong>
+                        <span style={{ color: '#666' }}>{formatDateTime(selectedTask.createdAt)}</span>
+                      </div>
+                      <div>
+                        <strong>风险承受等级：</strong>
+                        <span style={{
+                          padding: '2px 6px',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          fontWeight: 'bold'
+                        }} className={getRiskTypeBadgeClass(selectedTask.riskType)}>
+                          {selectedTask.riskType}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div style={{
+                      marginTop: '15px',
+                      padding: '12px',
+                      background: '#f8f9fa',
+                      borderRadius: '4px',
+                      borderLeft: '3px solid #667eea'
+                    }}>
+                      <div style={{ fontSize: '13px', color: '#666' }}>
+                        <strong style={{ color: '#667eea' }}>审核说明：</strong>
+                        该客户的风险评估申请已进入初级审核阶段，请仔细审核客户基本信息的完整性和真实性，
+                        并根据风险承受能力给出合理的评分建议。
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* 初级审核信息提示 */}
                 <div style={{
@@ -626,6 +795,19 @@ const JuniorAuditPage: React.FC = () => {
         .badge-aggressive {
           background: #ffebee !important;
           color: #F44336 !important;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            max-height: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            max-height: 500px;
+            transform: translateY(0);
+          }
         }
 
         @media (max-width: 768px) {
