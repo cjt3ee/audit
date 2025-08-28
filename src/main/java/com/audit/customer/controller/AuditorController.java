@@ -4,8 +4,12 @@ import com.audit.customer.dto.ApiResponse;
 import com.audit.customer.dto.AuditResultSubmissionRequest;
 import com.audit.customer.dto.AuditResultSubmissionResponse;
 import com.audit.customer.dto.AuditTaskResponse;
+import com.audit.customer.dto.AuditorLoginRequest;
+import com.audit.customer.dto.AuditorLoginResponse;
+import com.audit.customer.dto.AuditorRegistrationRequest;
 import com.audit.customer.service.AuditTaskService;
 import com.audit.customer.service.AuditWorkflowService;
+import com.audit.customer.service.AuditorAuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +30,9 @@ public class AuditorController {
     
     @Autowired
     private AuditWorkflowService auditWorkflowService;
+    
+    @Autowired
+    private AuditorAuthService auditorAuthService;
 
     @GetMapping("/tasks")
     public ResponseEntity<ApiResponse<AuditTaskResponse>> getAuditTasks(@RequestParam Integer level) {
@@ -70,6 +77,63 @@ public class AuditorController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Error processing audit result for audit ID: {}", request.getAuditId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("服务器内部错误"));
+        }
+    }
+    
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<Void>> registerAuditor(
+            @Valid @RequestBody AuditorRegistrationRequest request,
+            BindingResult bindingResult) {
+        
+        if (bindingResult.hasErrors()) {
+            StringBuilder errorMsg = new StringBuilder();
+            bindingResult.getFieldErrors().forEach(error ->
+                errorMsg.append(error.getDefaultMessage()).append("; ")
+            );
+            logger.warn("Auditor registration validation failed: {}", errorMsg.toString());
+            return ResponseEntity.badRequest().body(ApiResponse.error(errorMsg.toString()));
+        }
+        
+        try {
+            auditorAuthService.registerAuditor(request);
+            logger.info("Auditor registered successfully: {}", request.getAccount());
+            return ResponseEntity.ok(ApiResponse.success("注册成功", null));
+        } catch (RuntimeException e) {
+            logger.warn("Auditor registration failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error registering auditor: {}", request.getAccount(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("服务器内部错误"));
+        }
+    }
+    
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuditorLoginResponse>> loginAuditor(
+            @Valid @RequestBody AuditorLoginRequest request,
+            BindingResult bindingResult) {
+        
+        if (bindingResult.hasErrors()) {
+            StringBuilder errorMsg = new StringBuilder();
+            bindingResult.getFieldErrors().forEach(error ->
+                errorMsg.append(error.getDefaultMessage()).append("; ")
+            );
+            logger.warn("Auditor login validation failed: {}", errorMsg.toString());
+            return ResponseEntity.badRequest().body(ApiResponse.error(errorMsg.toString()));
+        }
+        
+        try {
+            AuditorLoginResponse response = auditorAuthService.login(request);
+            logger.info("Auditor logged in successfully: {} (level: {})", 
+                       response.getAccount(), response.getLevel());
+            return ResponseEntity.ok(ApiResponse.success("登录成功", response));
+        } catch (RuntimeException e) {
+            logger.warn("Auditor login failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error logging in auditor: {}", request.getAccount(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("服务器内部错误"));
         }
